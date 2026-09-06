@@ -247,6 +247,35 @@
     outline-offset:3px;
   }
 
+  /* 依部門隱藏（.card 與 .section-label 都是 flex，需明確蓋掉 hidden 屬性） */
+  .card[hidden],
+  .section-label[hidden]{ display:none; }
+
+  /* 顯示張數為奇數時，最後一張撐滿整列，右邊才不會留空 */
+  .card.is-wide{ grid-column:1 / -1; }
+
+  /* 查無資料／錯誤提示 */
+  .notice{
+    margin:0;
+    padding:26px 20px;
+    border-radius:var(--radius-lg);
+    border:1px solid var(--rose-soft);
+    background:var(--rose-wash);
+    color:var(--rose-deep);
+    font-size:15px;
+    font-weight:700;
+    letter-spacing:.03em;
+    line-height:1.7;
+  }
+  .notice .sub{
+    display:block;
+    margin-top:6px;
+    font-size:13px;
+    font-weight:400;
+    color:var(--ink-soft);
+    letter-spacing:0;
+  }
+
   /* 資訊類卡片：走思庭藕粉色 */
   .card.is-rose{
     --c:      var(--rose);
@@ -285,6 +314,11 @@
     font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size:12px;
     color:var(--ink);
+    /* flex 項目預設 min-width:auto，會被長字串撐開；設 0 才縮得下來 */
+    flex:1 1 auto;
+    min-width:0;
+    word-break:break-all;
+    overflow-wrap:anywhere;
   }
   .debug.is-ok{    border-color:var(--blue-soft); background:var(--blue-wash); }
   .debug.is-warn{  border-color:var(--rose-soft); background:var(--rose-wash); }
@@ -338,15 +372,13 @@
 
   <hr class="divider">
 
-  <p class="section-label">功能選單</p>
+  <p class="section-label" id="menuLabel">功能選單</p>
 
-  <!-- 功能卡片（靜態，尚未連結） -->
-  <div class="cards">
+  <!-- 功能卡片：預設全部隱藏，由 JS 依部門開啟 -->
+  <div class="cards" id="cards">
 
-    <!-- 假勤類：霧藍 -->
-    <button type="button" class="card">
+    <button type="button" class="card" data-fn="預休登記" hidden>
       <span class="icon" aria-hidden="true">
-        <!-- 月曆 -->
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
              stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="5" width="18" height="16" rx="3"/>
@@ -357,9 +389,19 @@
       <span class="title">預休登記</span>
     </button>
 
-    <button type="button" class="card">
+    <button type="button" class="card" data-fn="排班登記" hidden>
       <span class="icon" aria-hidden="true">
-        <!-- 文件 + 打勾 -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+             stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="17" rx="3"/>
+          <path d="M3 9.5h18M3 15.3h18M9.2 9.5V21"/>
+        </svg>
+      </span>
+      <span class="title">排班登記</span>
+    </button>
+
+    <button type="button" class="card" data-fn="請假申請" hidden>
+      <span class="icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
              stroke-linecap="round" stroke-linejoin="round">
           <path d="M14 3H7a2.5 2.5 0 0 0-2.5 2.5v13A2.5 2.5 0 0 0 7 21h10a2.5 2.5 0 0 0 2.5-2.5V8.5z"/>
@@ -370,10 +412,19 @@
       <span class="title">請假申請</span>
     </button>
 
-    <!-- 資訊類：藕粉 -->
-    <button type="button" class="card is-rose">
+    <button type="button" class="card is-rose" data-fn="報表" hidden>
       <span class="icon" aria-hidden="true">
-        <!-- 資料夾 -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 20.5h18"/>
+          <path d="M6.6 20.5v-5.6M12 20.5V8.2M17.4 20.5v-8.6"/>
+        </svg>
+      </span>
+      <span class="title">報表</span>
+    </button>
+
+    <button type="button" class="card is-rose" data-fn="開會內容" hidden>
+      <span class="icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
              stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h3.2a2 2 0 0 1 1.5.7l1.1 1.3h7.2A2.5 2.5 0 0 1 21 9.5v8A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5z"/>
@@ -383,9 +434,8 @@
       <span class="title">開會內容</span>
     </button>
 
-    <button type="button" class="card is-rose">
+    <button type="button" class="card is-rose" data-fn="月中介紹" hidden>
       <span class="icon" aria-hidden="true">
-        <!-- 文件 + 資訊 -->
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
              stroke-linecap="round" stroke-linejoin="round">
           <path d="M14 3H7a2.5 2.5 0 0 0-2.5 2.5v13A2.5 2.5 0 0 0 7 21h10a2.5 2.5 0 0 0 2.5-2.5V8.5z"/>
@@ -398,6 +448,9 @@
 
   </div>
 
+  <!-- 查無資料／錯誤提示 -->
+  <p class="notice" id="notice" hidden></p>
+
   <!-- LIFF 測試面板：確認身分有沒有抓到，確認完可整段刪除 -->
   <section class="debug" id="debugBox">
     <h2>LIFF 連線測試</h2>
@@ -405,6 +458,7 @@
     <div class="row"><span class="k">暱稱</span><span class="v" id="dbgName">—</span></div>
     <div class="row"><span class="k">userId</span><span class="v" id="dbgUid">—</span></div>
     <div class="row"><span class="k">開啟環境</span><span class="v" id="dbgEnv">—</span></div>
+    <div class="row"><span class="k">主檔比對</span><span class="v" id="dbgMatch">—</span></div>
   </section>
 
   <p class="foot">晴暢國際有限公司　內部使用</p>
@@ -413,22 +467,71 @@
 
 <script>
 (function(){
-  var LIFF_ID = "2011467420-8ej4byB6";
+  var LIFF_ID    = "2011467420-8ej4byB6";
+  var ROSTER_URL = "https://script.google.com/macros/s/AKfycbzitK29DxZdY8GKoWudHUXA8RBFHQBLQ7DUWuJeulM-zLkl7iMRvFYROThJgLVa9oDy/exec?action=getRoster";
+
+  // 各部門可見的功能（共通功能另外加）
+  var DEPT_FUNCTIONS = {
+    "行政": ["請假申請"],
+    "思庭": ["預休登記", "請假申請"],
+    "妥妥": ["預休登記", "請假申請"],
+    "倫倫": ["排班登記", "請假申請"],
+    "老闆": ["報表"]
+  };
+  var COMMON_FUNCTIONS = ["開會內容", "月中介紹"];
 
   var elName   = document.getElementById("userName");
+  var elMenu   = document.getElementById("menuLabel");
+  var elCards  = document.getElementById("cards");
+  var elNotice = document.getElementById("notice");
+  var allCards = [].slice.call(elCards.querySelectorAll(".card"));
+
   var elBox    = document.getElementById("debugBox");
   var elStatus = document.getElementById("dbgStatus");
   var elDbgName= document.getElementById("dbgName");
   var elUid    = document.getElementById("dbgUid");
   var elEnv    = document.getElementById("dbgEnv");
+  var elMatch  = document.getElementById("dbgMatch");
 
   function setState(cls, status){
     elBox.className = "debug " + cls;
     elStatus.textContent = status;
   }
 
+  // 顯示提示訊息，並把功能區整個收起來
+  function showNotice(main, sub){
+    allCards.forEach(function(c){ c.hidden = true; });
+    elMenu.hidden = true;
+    elNotice.hidden = false;
+    elNotice.innerHTML = "";
+    elNotice.appendChild(document.createTextNode(main));
+    if (sub) {
+      var s = document.createElement("span");
+      s.className = "sub";
+      s.textContent = sub;
+      elNotice.appendChild(s);
+    }
+  }
+
+  // 依部門開啟對應卡片
+  function renderCards(dept){
+    var allow = (DEPT_FUNCTIONS[dept] || []).concat(COMMON_FUNCTIONS);
+    var shown = [];
+    allCards.forEach(function(c){
+      var on = allow.indexOf(c.getAttribute("data-fn")) !== -1;
+      c.hidden = !on;
+      c.classList.remove("is-wide");
+      if (on) shown.push(c);
+    });
+    // 奇數張時最後一張撐滿整列
+    if (shown.length % 2 === 1) shown[shown.length - 1].classList.add("is-wide");
+    elNotice.hidden = true;
+    elMenu.hidden = false;
+    return shown.length;
+  }
+
   // 記錄「已嘗試過登入跳轉」，避免登入失敗時來回無限跳轉
-  var LOGIN_FLAG = "liff_login_redirected";
+  var LOGIN_FLAG = "liff_login_attempted";
   function getFlag(k){   try { return sessionStorage.getItem(k); } catch(e){ return null; } }
   function setFlag(k){   try { sessionStorage.setItem(k, "1"); } catch(e){} }
   function clearFlag(k){ try { sessionStorage.removeItem(k); }  catch(e){} }
@@ -437,6 +540,7 @@
   if (typeof liff === "undefined") {
     elName.textContent = "訪客";
     setState("is-error", "LIFF SDK 載入失敗，請檢查網路連線");
+    showNotice("無法載入登入元件", "請確認網路連線後重新開啟");
     return;
   }
 
@@ -454,7 +558,9 @@
           clearFlag(LOGIN_FLAG);
           elName.textContent = "訪客";
           setState("is-error",
-            "已完成 LINE 登入但仍取不到身分，請確認瀏覽器允許 Cookie，或改用 LINE 開啟");
+            "無法自動登入，請直接用 LINE App 開啟此頁，或關閉無痕模式後再試");
+          showNotice("無法自動登入",
+            "請直接用 LINE App 開啟此頁，或關閉無痕模式後再試");
           return;
         }
         setFlag(LOGIN_FLAG);
@@ -466,22 +572,65 @@
 
       clearFlag(LOGIN_FLAG);
 
-      return liff.getProfile()
-        .then(function(profile){
-          elName.textContent    = profile.displayName;
-          elDbgName.textContent = profile.displayName;
-          elUid.textContent     = profile.userId;
-          setState("is-ok", "成功抓到身分 ✓");
-        })
-        .catch(function(err){
-          elName.textContent = "訪客";
-          setState("is-error", "getProfile 失敗：" + (err && (err.message || err.code) || err));
-        });
+      return liff.getProfile().then(function(profile){
+        elDbgName.textContent = profile.displayName;
+        elUid.textContent     = profile.userId;
+        setState("is-warn", "已取得 LINE 身分，比對員工主檔中…");
+
+        // 用 userId 比對員工主檔
+        return fetch(ROSTER_URL, { method: "GET" })
+          .then(function(res){
+            if (!res.ok) throw new Error("HTTP " + res.status);
+            return res.json();
+          })
+          .then(function(roster){
+            if (!Array.isArray(roster)) throw new Error("回傳格式不是陣列");
+
+            // 試算表欄位可能夾帶前後空白，一律去掉再比對
+            function clean(v){ return (v == null ? "" : String(v)).trim(); }
+
+            var me = null;
+            for (var i = 0; i < roster.length; i++) {
+              var r = roster[i];
+              if (r && clean(r.userId) === clean(profile.userId)) {
+                me = { name: clean(r.name), dept: clean(r.dept), area: clean(r.area) };
+                break;
+              }
+            }
+
+            // 不在名單
+            if (!me) {
+              elName.textContent  = "訪客";
+              elMatch.textContent = "查無此 userId（名單共 " + roster.length + " 筆）";
+              setState("is-error", "查無您的資料");
+              showNotice("查無您的資料，請聯繫行政",
+                "若您已在職，請將上方的 userId 提供給行政人員登錄");
+              return;
+            }
+
+            // 比對成功 → 用主檔姓名打招呼、依部門開卡片
+            elName.textContent  = me.name;
+            elMatch.textContent = me.name + "／" + me.dept + (me.area ? "／" + me.area : "");
+            var n = renderCards(me.dept);
+            setState("is-ok", "比對成功 ✓　部門：" + me.dept + "　功能 " + n + " 項");
+          })
+          .catch(function(err){
+            elName.textContent = "訪客";
+            setState("is-error", "讀取員工名單失敗：" + (err && err.message || err));
+            showNotice("無法讀取員工名單", "請稍後再試，或聯繫行政");
+          });
+      })
+      .catch(function(err){
+        elName.textContent = "訪客";
+        setState("is-error", "getProfile 失敗：" + (err && (err.message || err.code) || err));
+        showNotice("無法取得您的 LINE 身分", "請重新從 LINE 開啟此頁");
+      });
     })
     .catch(function(err){
       elName.textContent = "訪客";
       elEnv.textContent  = "—";
       setState("is-error", "liff.init 失敗：" + (err && (err.message || err.code) || err));
+      showNotice("系統初始化失敗", "請稍後再試，或聯繫行政");
     });
 })();
 </script>
