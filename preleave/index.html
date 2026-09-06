@@ -1503,7 +1503,7 @@
           return;
         }
         lineEl.className = "quota-row";
-        lineEl.innerHTML = "去年剩 " + roundQuotaDays(data.annualLastYear) + " 天　今年有 " + roundQuotaDays(data.annualTotal) + " 天<br>今年已請 " + roundQuotaDays(data.annualUsed) + " 天　剩 " + roundQuotaDays(data.annualLeft) + " 天";
+        lineEl.innerHTML = "去年剩 " + roundQuotaDays(data.annualLastYear) + " 天　今年有 " + roundQuotaDays(data.annualTotal) + " 天<br>今年已請 " + roundQuotaDays(data.annualUsed) + " 天　總共剩 " + roundQuotaDays(data.annualLeft) + " 天";
 
         var others = data.others || [];
         othersEl.className = "quota-row";
