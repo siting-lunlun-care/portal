@@ -52,6 +52,7 @@
     background: linear-gradient(180deg, #FFF1EC 0%, #FFF8F4 220px, #FFF8F4 100%);
     color: var(--ink);
     font-family: "JinXuan", -apple-system, "PingFang TC", sans-serif;
+    padding-top: calc(56px + env(safe-area-inset-top));
     padding-bottom: 96px;
   }
 
@@ -78,19 +79,76 @@
     padding: 18px 16px 24px;
   }
 
-  header.top{
-    text-align: center;
-    margin-bottom: 18px;
+  /* ---- 浮動 logo 標題列（跟入口頁同款太陽 logo，點一下回入口頁；
+         預休與請假兩個模組共用同一套樣式） ---- */
+  .topbar{
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 30;
+    background: rgba(255, 248, 244, 0.94);
+    backdrop-filter: saturate(1.6) blur(10px);
+    -webkit-backdrop-filter: saturate(1.6) blur(10px);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 2px 12px rgba(180, 130, 120, 0.10);
+    padding-top: env(safe-area-inset-top);
   }
-  header.top h1{
-    font-size: 20px;
-    margin: 0 0 2px;
+  .topbar-inner{
+    max-width: 460px;
+    margin: 0 auto;
+    height: 56px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+  }
+  .topbar .sun{
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: linear-gradient(140deg, #F5D06A 0%, #E5A92E 100%);
+    display: grid;
+    place-items: center;
+    box-shadow: 0 3px 9px rgba(214, 157, 45, 0.30);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  .topbar .sun svg{
+    width: 17px;
+    height: 17px;
+    display: block;
+  }
+  .topbar .title{
+    font-size: 16px;
     font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--ink);
   }
-  header.top p{
-    margin:0;
-    font-size: 12px;
-    color: var(--ink-soft);
+  /* 小標籤，讓人一眼知道這條標題列可以點 */
+  .topbar .back-hint{
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-dark);
+    background: var(--accent-soft);
+    border-radius: 999px;
+    padding: 6px 11px;
+    transition: background-color 0.18s ease, color 0.18s ease;
+  }
+  .topbar-inner:active .sun{ transform: scale(0.94); }
+  .topbar-inner:active .back-hint{ background: var(--accent-dark); color: #fff; }
+  @media (hover:hover){
+    .topbar-inner:hover .sun{
+      transform: rotate(18deg);
+      box-shadow: 0 4px 12px rgba(214, 157, 45, 0.42);
+    }
+    .topbar-inner:hover .back-hint{ background: var(--accent); color: #fff; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .topbar .sun{ transition: none; }
+    .topbar-inner:hover .sun{ transform: none; }
   }
 
   .page-toggle{
@@ -898,12 +956,22 @@
 </style>
 </head>
 <body>
-<div class="app">
 
-  <header class="top">
-    <h1>🌸 員工預休登記</h1>
-    <p>晴暢集團 內部工具</p>
-  </header>
+<header class="topbar">
+  <a class="topbar-inner" href="https://siting-lunlun-care.github.io/portal/" aria-label="員工預休登記，點此返回員工系統入口">
+    <span class="sun" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>
+        <circle cx="12" cy="12" r="3.4"/>
+      </svg>
+    </span>
+    <span class="title">員工預休登記</span>
+    <span class="back-hint">返回入口 ›</span>
+  </a>
+</header>
+
+<div class="app">
 
   <div class="page-toggle">
     <button type="button" class="page-toggle-btn active" id="toggleMineBtn">我的預休表</button>
