@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>請假申請</title>
+<style>
+  /* 金萱字型：跟入口頁、預休頁一致。字型檔放在 portal 根目錄，
+     本模組放在 portal/leave/ 子資料夾，所以用上一層路徑讀取。 */
+  @font-face {
+    font-family: "JinXuan";
+    src: url("../jinxuan_subset.woff2") format("woff2");
+    font-weight: 600;
+    font-display: swap;
+  }
+
+  :root{
+    --bg: #FFF8F4;
+    --card: #FFFFFF;
+    --ink: #4A3F3B;
+    --ink-soft: #8A7C76;
+    --accent: #E9A0A8;
+    --accent-dark: #C97882;
+    --accent-soft: #FBE3E6;
+    --line: #F1E4DF;
+    --warn: #D9762F;
+    --warn-bg: #FDEEE0;
+    --ok: #4C8C6B;
+    --ok-bg: #E4F3EA;
+    --err: #C9575A;
+    --err-bg: #FBE7E6;
+  }
+
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body{
+    margin:0;
+    background: linear-gradient(180deg, #FFF1EC 0%, #FFF8F4 220px, #FFF8F4 100%);
+    color: var(--ink);
+    font-family: "JinXuan", -apple-system, "PingFang TC", sans-serif;
+    padding-top: calc(56px + env(safe-area-inset-top));
+    padding-bottom: 96px;
+  }
+
+  /* 動態內容用系統字型，不用金萱瘦身字型：姓名、部門、理由輸入框、
+     照片檔名——這些是不固定的文字，瘦身字型可能沒包含用到的字。 */
+  #greetName,
+  #whoMeta,
+  #reasonInput,
+  .photo-preview{
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+
+  .app{
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 18px 16px 24px;
+  }
+
+  /* ---- 浮動 logo 標題列（跟入口頁同款太陽 logo，點一下回入口頁；
+         預休與請假兩個模組共用同一套樣式） ---- */
+  .topbar{
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 30;
+    background: rgba(255, 248, 244, 0.94);
+    backdrop-filter: saturate(1.6) blur(10px);
+    -webkit-backdrop-filter: saturate(1.6) blur(10px);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 2px 12px rgba(180, 130, 120, 0.10);
+    padding-top: env(safe-area-inset-top);
+  }
+  .topbar-inner{
+    max-width: 460px;
+    margin: 0 auto;
+    height: 56px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+  }
+  .topbar .sun{
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: linear-gradient(140deg, #FFD98A 0%, #F2B33D 100%);
+    display: grid;
+    place-items: center;
+    box-shadow: 0 3px 9px rgba(226, 163, 45, 0.32);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  .topbar .sun svg{
+    width: 17px;
+    height: 17px;
+    display: block;
+  }
+  .topbar .title{
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+  }
+  /* 小標籤，讓人一眼知道這條標題列可以點 */
+  .topbar .back-hint{
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-dark);
+    background: var(--accent-soft);
+    border-radius: 999px;
+    padding: 6px 11px;
+    transition: background-color 0.18s ease, color 0.18s ease;
+  }
+  .topbar-inner:active .sun{ transform: scale(0.94); }
+  .topbar-inner:active .back-hint{ background: var(--accent-dark); color: #fff; }
+  @media (hover:hover){
+    .topbar-inner:hover .sun{
+      transform: rotate(18deg);
+      box-shadow: 0 4px 12px rgba(226, 163, 45, 0.42);
+    }
+    .topbar-inner:hover .back-hint{ background: var(--accent); color: #fff; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .topbar .sun{ transition: none; }
+    .topbar-inner:hover .sun{ transform: none; }
+  }
+
+  .card{
+    background: var(--card);
+    border-radius: 20px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 6px 20px rgba(180, 130, 120, 0.08);
+  }
+
+  /* ---- 身分卡 ---- */
+  .greeting{
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--accent-dark);
+  }
+  .who-meta{
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .quota-card{
+    margin-top: 12px;
+    background: #FBF6F3;
+    border-radius: 14px;
+    padding: 12px 14px;
+  }
+  .quota-card .quota-title{
+    display:flex;
+    align-items:center;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+  .quota-card .quota-title .dot{
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--accent);
+  }
+  .quota-card .quota-row{
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.7;
+    font-weight: 700;
+  }
+  .quota-card .quota-row.quota-muted{
+    color: var(--ink-soft);
+    font-weight: 400;
+  }
+
+  /* ---- 最近申請紀錄（可展開／收合） ---- */
+  .history-block{
+    margin-top: 10px;
+    border-top: 1px solid var(--line);
+    padding-top: 4px;
+  }
+  .history-toggle{
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 2px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .history-toggle .arrow{
+    color: var(--accent-dark);
+    font-size: 14px;
+    line-height: 1;
+    transition: transform 0.2s ease;
+  }
+  .history-toggle.open .arrow{
+    transform: rotate(90deg);
+  }
+  .history-toggle .count{
+    margin-left: auto;
+    margin-right: 6px;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--ink-soft);
+  }
+
+  .history-body{
+    padding-bottom: 4px;
+  }
+  .history-row{
+    padding: 10px 2px;
+    border-top: 1px solid var(--line);
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+  .history-row:first-child{ border-top: none; }
+  .history-row-top{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 3px;
+  }
+  .history-type{
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .history-days{
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .history-status{
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .hs-wait{ background: var(--warn-bg); color: var(--warn); }
+  .hs-ok{   background: var(--ok-bg);   color: var(--ok); }
+  .hs-no{   background: var(--err-bg);  color: var(--err); }
+  .hs-other{ background: #F3EEEC; color: var(--ink-soft); }
+  .history-time{
+    font-size: 12px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+  }
+  .history-msg{
+    font-size: 12px;
+    color: var(--ink-soft);
+    text-align: center;
+    padding: 14px 0;
+  }
+  .history-msg .btn-retry-history{
+    display: block;
+    margin: 8px auto 0;
+    border: none;
+    background: #F3EEEC;
+    color: var(--ink-soft);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 7px 16px;
+    border-radius: 999px;
+  }
+
+  /* ---- 表單 ---- */
+  h3.section-title{
+    font-size: 14px;
+    margin: 0 0 12px;
+    color: var(--ink);
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+
+  .field{
+    margin-bottom: 14px;
+  }
+  .field:last-child{ margin-bottom: 0; }
+  .field > label{
+    display:block;
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .field .opt{
+    font-weight: 400;
+    color: var(--ink-soft);
+  }
+
+  select.input,
+  input.input,
+  textarea.input{
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 12px;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--ink);
+    background: #fff;
+  }
+  textarea.input{
+    resize: vertical;
+    min-height: 78px;
+    line-height: 1.6;
+  }
+  select.input{
+    appearance: none;
+    -webkit-appearance: none;
+    font-weight: 700;
+    color: var(--accent-dark);
+    background: var(--accent-soft) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23C97882'><path d='M7 10l5 5 5-5z'/></svg>") no-repeat right 12px center;
+    background-size: 16px;
+    border-color: transparent;
+    padding-right: 36px;
+  }
+  input.input[type="datetime-local"]{
+    /* iOS 上 datetime-local 預設會被壓縮，固定高度比較穩 */
+    min-height: 46px;
+    line-height: 1.3;
+  }
+  .input:focus{
+    outline: none;
+    border-color: var(--accent);
+  }
+  .input.is-error{
+    border-color: var(--err);
+    background-color: #FFF7F7;
+  }
+
+  .duration-hint{
+    margin: -6px 0 14px;
+    font-size: 12px;
+    color: var(--accent-dark);
+    font-weight: 700;
+  }
+  .duration-hint.is-bad{ color: var(--err); }
+
+  /* ---- 照片 ---- */
+  .photo-block{
+    margin-top: 4px;
+    background: #FBF6F3;
+    border-radius: 14px;
+    padding: 12px 14px;
+  }
+  .photo-block .photo-hint{
+    font-size: 11px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    margin: 0 0 8px;
+  }
+  .photo-block input[type=file]{
+    font-size: 12px;
+    width: 100%;
+  }
+  .photo-preview{
+    margin-top: 10px;
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .photo-preview img{
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+  .btn-photo-clear{
+    border: none;
+    background: #F3EEEC;
+    color: var(--ink-soft);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 999px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  /* ---- 送出列 ---- */
+  .submit-bar{
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(255,248,244,0) 0%, #FFF8F4 30%);
+    z-index: 40;
+  }
+  .submit-bar .inner{
+    max-width: 460px;
+    margin: 0 auto;
+  }
+  .btn-primary{
+    width: 100%;
+    border: none;
+    background: var(--accent-dark);
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+    font-family: inherit;
+    padding: 15px;
+    border-radius: 16px;
+    box-shadow: 0 8px 18px rgba(201, 120, 130, 0.35);
+  }
+  .btn-primary:disabled{
+    background: #D8CFCB;
+    box-shadow: none;
+  }
+  .btn-primary:active:not(:disabled){ background: var(--accent); }
+
+  /* ---- 提示 / 錯誤 ---- */
+  .notice{
+    margin: 0;
+    padding: 26px 20px;
+    border-radius: 20px;
+    background: var(--card);
+    box-shadow: 0 6px 20px rgba(180, 130, 120, 0.08);
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent-dark);
+    line-height: 1.7;
+  }
+  .notice .sub{
+    display:block;
+    margin-top: 8px;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--ink-soft);
+  }
+
+  .load-error{
+    margin-top: 12px;
+    background: var(--warn-bg);
+    border-radius: 14px;
+    padding: 12px;
+    text-align: center;
+  }
+  .load-error p{
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: var(--warn);
+    font-weight: 600;
+  }
+  .btn-retry-load{
+    border: none;
+    background: var(--warn);
+    color: #fff;
+    font-weight: 700;
+    font-family: inherit;
+    padding: 9px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+  }
+
+  .footnote{
+    text-align:center;
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+    line-height: 1.6;
+  }
+
+  /* ---- 完成畫面 ---- */
+  .done-card{
+    text-align: center;
+    padding: 34px 20px 30px;
+  }
+  .done-card .icon{
+    font-size: 46px;
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+  .done-card h2{
+    margin: 0 0 8px;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--ok);
+  }
+  .done-card p{
+    margin: 0;
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.8;
+  }
+  .done-summary{
+    margin-top: 16px;
+    background: #FBF6F3;
+    border-radius: 14px;
+    padding: 12px 14px;
+    text-align: left;
+    font-size: 13px;
+    line-height: 1.9;
+    color: var(--ink);
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+  .done-summary .k{
+    display:inline-block;
+    min-width: 52px;
+    color: var(--ink-soft);
+  }
+  .btn-again{
+    margin-top: 16px;
+    width: 100%;
+    border: none;
+    background: #F3EEEC;
+    color: var(--ink-soft);
+    font-weight: 700;
+    font-family: inherit;
+    font-size: 14px;
+    padding: 13px;
+    border-radius: 14px;
+  }
+
+  /* ---- Toast ---- */
+  .toast{
+    position: fixed;
+    left: 50%;
+    bottom: 96px;
+    transform: translate(-50%, 12px);
+    background: var(--ink);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s ease;
+    z-index: 90;
+    max-width: 85%;
+    text-align: center;
+    line-height: 1.5;
+  }
+  .toast.show{ opacity: 1; transform: translate(-50%, 0); }
+  .toast.error{ background: var(--err); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="topbar-inner" href="https://siting-lunlun-care.github.io/portal/" aria-label="員工請假申請，點此返回員工系統入口">
+    <span class="sun" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>
+        <circle cx="12" cy="12" r="3.4"/>
+      </svg>
+    </span>
+    <span class="title">員工請假申請</span>
+    <span class="back-hint">返回入口 ›</span>
+  </a>
+</header>
+
+<div class="app">
+
+  <!-- 沒有 uid／查無此人／名單載入失敗時顯示 -->
+  <div id="blockView" style="display:none;">
+    <p class="notice" id="blockNotice"></p>
+    <div class="load-error" id="loadError" style="display:none;">
+      <p>可能是網路不穩，請再試一次</p>
+      <button class="btn-retry-load" id="retryLoadBtn">重新載入</button>
+    </div>
+  </div>
+
+  <!-- 載入中 -->
+  <div id="loadingView">
+    <p class="notice">讀取員工資料中…<span class="sub">請稍候</span></p>
+  </div>
+
+  <!-- 主畫面 -->
+  <div id="mainView" style="display:none;">
+
+    <div class="card">
+      <p class="greeting">哈囉 <span id="greetName"></span> 👋</p>
+      <p class="who-meta" id="whoMeta"></p>
+
+      <div class="quota-card">
+        <div class="quota-title"><span class="dot"></span>特休額度</div>
+        <div class="quota-row quota-muted" id="quotaLine">載入中…</div>
+      </div>
+
+      <div class="history-block">
+        <button type="button" class="history-toggle" id="historyToggle" aria-expanded="false" aria-controls="historyBody">
+          <span>📋 最近申請紀錄</span>
+          <span class="count" id="historyCount"></span>
+          <span class="arrow" aria-hidden="true">›</span>
+        </button>
+        <div class="history-body" id="historyBody" style="display:none;">
+          <div id="historyList">
+            <p class="history-msg">載入中…</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="section-title">🗓 請假內容</h3>
+
+      <div class="field">
+        <label for="typeSelect">假別</label>
+        <select class="input" id="typeSelect">
+          <option value="">請選擇假別</option>
+          <option value="特休">特休</option>
+          <option value="病假">病假</option>
+          <option value="事假">事假</option>
+          <option value="喪假">喪假</option>
+          <option value="婚假">婚假</option>
+          <option value="產假">產假</option>
+          <option value="產檢假">產檢假</option>
+          <option value="育嬰假">育嬰假</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="startInput">開始時間</label>
+        <input class="input" type="datetime-local" id="startInput">
+      </div>
+
+      <div class="field">
+        <label for="endInput">結束時間</label>
+        <input class="input" type="datetime-local" id="endInput">
+      </div>
+
+      <div class="duration-hint" id="durationHint" style="display:none;"></div>
+
+      <div class="field">
+        <label for="reasonInput">請假理由 <span class="opt">（選填）</span></label>
+        <textarea class="input" id="reasonInput" placeholder="簡單說明即可"></textarea>
+      </div>
+
+      <div class="field" id="photoField" style="display:none;">
+        <label>證明照片 <span class="opt">（選填）</span></label>
+        <div class="photo-block">
+          <p class="photo-hint" id="photoHint">📎 可上傳診斷證明、單據等，有照片能加速行政審核</p>
+          <input type="file" id="photoInput" accept="image/*">
+          <div class="photo-preview" id="photoPreview" style="display:none;">
+            <img id="photoThumb" alt="">
+            <span id="photoName"></span>
+            <button type="button" class="btn-photo-clear" id="photoClearBtn">移除</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="footnote">送出後由行政核算天數，審核結果會用 LINE 通知你</p>
+  </div>
+
+  <!-- 送出成功 -->
+  <div id="doneView" style="display:none;">
+    <div class="card done-card">
+      <div class="icon">✅</div>
+      <h2>申請已受理</h2>
+      <p>等待行政核算天數<br>結果會用 LINE 通知你</p>
+      <div class="done-summary" id="doneSummary"></div>
+      <button class="btn-again" id="againBtn">再送一筆</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="submit-bar" id="submitBar" style="display:none;">
+  <div class="inner">
+    <button class="btn-primary" id="submitBtn">送出申請</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ============================================================
+  // 設定
+  // ============================================================
+
+  // 請假系統（拿名單、查特休額度、送請假單）
+  var LEAVE_GAS_URL = "https://script.google.com/macros/s/AKfycbzitK29DxZdY8GKoWudHUXA8RBFHQBLQ7DUWuJeulM-zLkl7iMRvFYROThJgLVa9oDy/exec";
+
+  // 這些假別會顯示證明照片上傳欄（＝特休以外全部）
+  var NO_PHOTO_TYPES = ["特休"];
+
+  var FETCH_TIMEOUT_MS = 25000;
+
+  // ============================================================
+  // 小工具
+  // ============================================================
+
+  // 手動解析網址參數，不用 URLSearchParams：避免它已自動解碼一次、
+  // 再手動 decode 造成重複解碼的問題（跟預休頁一致）。
+  function getQueryParam(name){
+    var search = window.location.search.replace(/^\?/, "");
+    if (!search) return null;
+    var pairs = search.split("&");
+    for (var i = 0; i < pairs.length; i++){
+      if (!pairs[i]) continue;
+      var kv = pairs[i].split("=");
+      var key = decodeURIComponent((kv[0] || "").replace(/\+/g, " "));
+      if (key === name){
+        return kv.length > 1 ? decodeURIComponent(kv.slice(1).join("=").replace(/\+/g, " ")) : "";
+      }
+    }
+    return null;
+  }
+
+  function clean(v){ return (v == null ? "" : String(v)).trim(); }
+
+  function roundDays(n){
+    if (typeof n !== "number" || isNaN(n)) return n;
+    return Math.round(n * 10) / 10;
+  }
+
+  // GAS 的回應：GET 走 script.googleusercontent.com 轉址本來就帶 CORS 標頭可直接讀；
+  // POST 只要不用 application/json（避免觸發預檢 OPTIONS，Apps Script 沒實作 doOptions），
+  // 改用 text/plain 送出，一樣會走同一個轉址、可以正常讀到回應內容——
+  // 所以這裡「不」使用 no-cors，而是直接讀後端真正回傳的 JSON，
+  // 才能在畫面上顯示真正的成功／失敗，而不是只知道「送出去了」。
+  function postJSON(url, payload){
+    return fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+      cache: "no-store" // 避免快取到 GAS 轉址時效已過的舊回應，造成偶發 404
+    }).then(function(res){
+      return res.text().then(function(text){
+        var data = null;
+        try { data = text ? JSON.parse(text) : null; } catch(e){}
+        return { httpOk: res.ok, status: res.status, data: data, raw: text };
+      });
+    }).catch(function(err){
+      return { httpOk: false, networkError: true, error: err };
+    });
+  }
+
+  function getJSON(url){
+    var ctrl = (typeof AbortController !== "undefined") ? new AbortController() : null;
+    var timedOut = false;
+    var timer = setTimeout(function(){
+      timedOut = true;
+      if (ctrl) ctrl.abort();
+    }, FETCH_TIMEOUT_MS);
+
+    var opts = { cache: "no-store" };
+    if (ctrl) opts.signal = ctrl.signal;
+
+    return fetch(url, opts).then(function(res){
+      clearTimeout(timer);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    }).catch(function(err){
+      clearTimeout(timer);
+      throw timedOut ? new Error("連線逾時") : err;
+    });
+  }
+
+  function isBackendSuccess(result){
+    if (!result || result.networkError || !result.httpOk) return false;
+    var d = result.data;
+    if (d && typeof d === "object"){
+      if (d.result === "SUCCESS") return true;
+      if (d.result === "ERROR") return false;
+      if (d.success === false) return false;
+      if (d.error) return false;
+    }
+    return true;
+  }
+
+  function backendErrorMessage(result){
+    if (!result) return "未知錯誤";
+    if (result.networkError) return "網路連線失敗，請確認網路後再試";
+    var d = result.data;
+    if (d && typeof d === "object"){
+      if (d.message) return d.message;
+      if (d.error) return String(d.error);
+    }
+    return "HTTP " + result.status;
+  }
+
+  // ---- toast ----
+  var toastEl = document.getElementById("toast");
+  var toastTimer = null;
+  function showToast(msg, isError){
+    toastEl.textContent = msg;
+    toastEl.className = "toast show" + (isError ? " error" : "");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove("show"); }, 2800);
+  }
+
+  // ============================================================
+  // 畫面切換
+  // ============================================================
+
+  var loadingView = document.getElementById("loadingView");
+  var blockView   = document.getElementById("blockView");
+  var blockNotice = document.getElementById("blockNotice");
+  var loadErrorEl = document.getElementById("loadError");
+  var mainView    = document.getElementById("mainView");
+  var doneView    = document.getElementById("doneView");
+  var submitBar   = document.getElementById("submitBar");
+
+  function showLoading(){
+    loadingView.style.display = "block";
+    blockView.style.display = "none";
+    mainView.style.display = "none";
+    doneView.style.display = "none";
+    submitBar.style.display = "none";
+  }
+
+  function showBlock(main, sub, canRetry){
+    loadingView.style.display = "none";
+    mainView.style.display = "none";
+    doneView.style.display = "none";
+    submitBar.style.display = "none";
+    blockView.style.display = "block";
+    blockNotice.innerHTML = "";
+    blockNotice.appendChild(document.createTextNode(main));
+    if (sub){
+      var s = document.createElement("span");
+      s.className = "sub";
+      s.textContent = sub;
+      blockNotice.appendChild(s);
+    }
+    loadErrorEl.style.display = canRetry ? "block" : "none";
+  }
+
+  function showMain(){
+    loadingView.style.display = "none";
+    blockView.style.display = "none";
+    doneView.style.display = "none";
+    mainView.style.display = "block";
+    submitBar.style.display = "block";
+  }
+
+  function showDone(){
+    loadingView.style.display = "none";
+    blockView.style.display = "none";
+    mainView.style.display = "none";
+    submitBar.style.display = "none";
+    doneView.style.display = "block";
+    window.scrollTo(0, 0);
+  }
+
+  // ============================================================
+  // 狀態
+  // ============================================================
+
+  var state = {
+    userId: null,
+    name: null,
+    dept: null,
+    area: null,
+    photoBase64: "",
+    photoName: "",
+    sending: false
+  };
+
+  var urlUid  = getQueryParam("uid");
+
+  // ============================================================
+  // A段：用 uid 從名單認人
+  // ============================================================
+
+  function loadRoster(){
+    showLoading();
+
+    getJSON(LEAVE_GAS_URL + "?action=getRoster")
+      .then(function(list){
+        if (!Array.isArray(list)) throw new Error("回傳格式不是陣列");
+
+        var me = null;
+        for (var i = 0; i < list.length; i++){
+          var r = list[i];
+          if (r && clean(r.userId) === clean(urlUid)){
+            me = { name: clean(r.name), dept: clean(r.dept), area: clean(r.area) };
+            break;
+          }
+        }
+
+        if (!me){
+          showBlock("查無您的資料",
+            "請聯繫行政確認員工主檔是否已登錄您的 LINE 身分", false);
+          return;
+        }
+
+        state.userId = clean(urlUid);
+        state.name = me.name;
+        state.dept = me.dept;
+        state.area = me.area;
+
+        document.getElementById("greetName").textContent = me.name;
+        document.getElementById("whoMeta").textContent =
+          me.dept + (me.area ? "　" + me.area : "");
+
+        showMain();
+        loadQuota();
+        loadHistory();
+      })
+      .catch(function(err){
+        console.error("[請假] 載入員工名單失敗", err);
+        showBlock("無法讀取員工名單",
+          (err && err.message === "連線逾時") ? "系統回應太慢，請重新載入試試" : "請稍後再試，或聯繫行政",
+          true);
+      });
+  }
+
+  document.getElementById("retryLoadBtn").addEventListener("click", loadRoster);
+
+  // ============================================================
+  // B段：剩餘特休
+  // ============================================================
+
+  var quotaLine = document.getElementById("quotaLine");
+
+  function loadQuota(){
+    quotaLine.className = "quota-row quota-muted";
+    quotaLine.textContent = "載入中…";
+
+    var url = LEAVE_GAS_URL + "?action=getQuota" +
+      "&dept=" + encodeURIComponent(state.dept) +
+      "&name=" + encodeURIComponent(state.name);
+
+    getJSON(url)
+      .then(function(data){
+        if (!data || typeof data.annualLeft === "undefined"){
+          quotaLine.className = "quota-row quota-muted";
+          quotaLine.textContent = "查無額度資料";
+          return;
+        }
+        quotaLine.className = "quota-row";
+        quotaLine.textContent = "剩餘特休 " + roundDays(data.annualLeft) + " 天";
+      })
+      .catch(function(err){
+        console.error("[請假] 讀取特休額度失敗", err);
+        quotaLine.className = "quota-row quota-muted";
+        quotaLine.textContent = "查無額度資料";
+      });
+  }
+
+  // ============================================================
+  // B-2段：最近申請紀錄（預設收合，認出人之後就先抓好）
+  // ============================================================
+
+  var historyToggle = document.getElementById("historyToggle");
+  var historyBody   = document.getElementById("historyBody");
+  var historyList   = document.getElementById("historyList");
+  var historyCount  = document.getElementById("historyCount");
+
+  // 狀態底色：待開頭的一律黃、已核准綠、不核准紅，其他走灰底不強調
+  function statusClass(status){
+    var s = clean(status);
+    if (s === "已核准") return "hs-ok";
+    if (s === "不核准") return "hs-no";
+    if (s.indexOf("待") === 0) return "hs-wait";
+    return "hs-other";
+  }
+
+  historyToggle.addEventListener("click", function(){
+    var open = historyBody.style.display !== "none";
+    historyBody.style.display = open ? "none" : "block";
+    historyToggle.classList.toggle("open", !open);
+    historyToggle.setAttribute("aria-expanded", open ? "false" : "true");
+  });
+
+  function setHistoryMsg(text, withRetry){
+    historyList.innerHTML = "";
+    var p = document.createElement("p");
+    p.className = "history-msg";
+    p.textContent = text;
+    if (withRetry){
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn-retry-history";
+      btn.textContent = "重新載入";
+      btn.addEventListener("click", loadHistory);
+      p.appendChild(btn);
+    }
+    historyList.appendChild(p);
+  }
+
+  function loadHistory(){
+    historyCount.textContent = "";
+    setHistoryMsg("載入中…", false);
+
+    getJSON(LEAVE_GAS_URL + "?action=getHistory&name=" + encodeURIComponent(state.name))
+      .then(function(list){
+        if (!Array.isArray(list) || list.length === 0){
+          setHistoryMsg("目前沒有申請紀錄", false);
+          return;
+        }
+        historyCount.textContent = list.length + " 筆";
+        renderHistory(list);
+      })
+      .catch(function(err){
+        console.error("[請假] 讀取申請紀錄失敗", err);
+        setHistoryMsg("讀取紀錄失敗", true);
+      });
+  }
+
+  function renderHistory(list){
+    historyList.innerHTML = "";
+
+    list.forEach(function(item){
+      var row = document.createElement("div");
+      row.className = "history-row";
+
+      var top = document.createElement("div");
+      top.className = "history-row-top";
+
+      var type = document.createElement("span");
+      type.className = "history-type";
+      type.textContent = clean(item.type) || "—";
+      top.appendChild(type);
+
+      // days 不一定是數字：還沒核算的會回文字（例如「待填寫」），
+      // 這種就原樣顯示，不要接上「天」變成「待填寫 天」
+      var daysText = "";
+      if (typeof item.days === "number"){
+        daysText = roundDays(item.days) + " 天";
+      } else if (clean(item.days)){
+        daysText = clean(item.days);
+      }
+      if (daysText){
+        var days = document.createElement("span");
+        days.className = "history-days";
+        days.textContent = daysText;
+        top.appendChild(days);
+      }
+
+      var status = document.createElement("span");
+      status.className = "history-status " + statusClass(item.status);
+      status.textContent = clean(item.status) || "—";
+      top.appendChild(status);
+
+      row.appendChild(top);
+
+      var time = document.createElement("div");
+      time.className = "history-time";
+      time.textContent = clean(item.start) + " → " + clean(item.end);
+      row.appendChild(time);
+
+      historyList.appendChild(row);
+    });
+  }
+
+  // ============================================================
+  // C段：表單
+  // ============================================================
+
+  var typeSelect   = document.getElementById("typeSelect");
+  var startInput   = document.getElementById("startInput");
+  var endInput     = document.getElementById("endInput");
+  var reasonInput  = document.getElementById("reasonInput");
+  var photoField   = document.getElementById("photoField");
+  var photoHint    = document.getElementById("photoHint");
+  var photoInput   = document.getElementById("photoInput");
+  var photoPreview = document.getElementById("photoPreview");
+  var photoThumb   = document.getElementById("photoThumb");
+  var photoNameEl  = document.getElementById("photoName");
+  var durationHint = document.getElementById("durationHint");
+  var submitBtn    = document.getElementById("submitBtn");
+
+  function clearError(el){ el.classList.remove("is-error"); }
+
+  typeSelect.addEventListener("change", function(){
+    clearError(typeSelect);
+    var t = typeSelect.value;
+    if (t && NO_PHOTO_TYPES.indexOf(t) === -1){
+      photoField.style.display = "block";
+      photoHint.textContent = "📎 可上傳" + t + "證明（診斷書、單據等），有照片能加速行政審核";
+    } else {
+      photoField.style.display = "none";
+      resetPhoto();
+    }
+  });
+
+  [startInput, endInput].forEach(function(el){
+    el.addEventListener("change", function(){
+      clearError(el);
+      renderDuration();
+    });
+  });
+  reasonInput.addEventListener("input", function(){ clearError(reasonInput); });
+
+  // 顯示這段時間大約多久，讓人送出前有機會發現填錯（實際天數由行政核算）
+  function renderDuration(){
+    var s = startInput.value, e = endInput.value;
+    if (!s || !e){
+      durationHint.style.display = "none";
+      return;
+    }
+    var ms = new Date(e).getTime() - new Date(s).getTime();
+    durationHint.style.display = "block";
+    if (isNaN(ms) || ms <= 0){
+      durationHint.className = "duration-hint is-bad";
+      durationHint.textContent = "⚠️ 結束時間要晚於開始時間";
+      return;
+    }
+    var hours = ms / 3600000;
+    durationHint.className = "duration-hint";
+    if (hours < 24){
+      durationHint.textContent = "⏱ 這段時間約 " + (Math.round(hours * 10) / 10) + " 小時";
+    } else {
+      durationHint.textContent = "⏱ 這段時間約 " + (Math.round(hours / 24 * 10) / 10) + " 天（實際天數由行政核算）";
+    }
+  }
+
+  // ---- 照片：壓縮後轉成完整 data URL base64 ----
+  // 後端用開頭 data:image/...;base64, 判斷 MIME 類型，
+  // 所以絕對不能只送純 base64、一定要保留完整開頭。
+  function compressImageToBase64(file){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(e){
+        var img = new Image();
+        img.onload = function(){
+          var maxDim = 1280;
+          var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          var w = Math.max(1, Math.round(img.width * scale));
+          var h = Math.max(1, Math.round(img.height * scale));
+          var canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL("image/jpeg", 0.75));
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function resetPhoto(){
+    state.photoBase64 = "";
+    state.photoName = "";
+    photoInput.value = "";
+    photoPreview.style.display = "none";
+    photoThumb.removeAttribute("src");
+    photoNameEl.textContent = "";
+  }
+
+  photoInput.addEventListener("change", function(){
+    var file = photoInput.files[0];
+    if (!file) return;
+    compressImageToBase64(file).then(function(base64){
+      state.photoBase64 = base64;
+      state.photoName = file.name;
+      photoThumb.src = base64;
+      photoNameEl.textContent = "已選擇：" + file.name;
+      photoPreview.style.display = "flex";
+    }).catch(function(){
+      resetPhoto();
+      showToast("這張照片讀取失敗，請重新選擇", true);
+    });
+  });
+
+  document.getElementById("photoClearBtn").addEventListener("click", resetPhoto);
+
+  // ============================================================
+  // D段：送出
+  // ============================================================
+
+  // datetime-local 給的是 "YYYY-MM-DDTHH:mm"，後端要 "YYYY-MM-DD HH:mm"
+  function toBackendTime(v){ return String(v || "").replace("T", " "); }
+
+  function validate(){
+    var firstBad = null;
+
+    if (!typeSelect.value){ typeSelect.classList.add("is-error"); firstBad = firstBad || { el: typeSelect, msg: "請選擇假別" }; }
+    if (!startInput.value){ startInput.classList.add("is-error"); firstBad = firstBad || { el: startInput, msg: "請填開始時間" }; }
+    if (!endInput.value){ endInput.classList.add("is-error"); firstBad = firstBad || { el: endInput, msg: "請填結束時間" }; }
+
+    if (startInput.value && endInput.value){
+      var ms = new Date(endInput.value).getTime() - new Date(startInput.value).getTime();
+      if (isNaN(ms) || ms <= 0){
+        endInput.classList.add("is-error");
+        firstBad = firstBad || { el: endInput, msg: "結束時間要晚於開始時間" };
+      }
+    }
+
+    // 理由不強制填（跟原本的請假表單一致），留空就送空字串
+
+    return firstBad;
+  }
+
+  function setSending(on){
+    state.sending = on;
+    submitBtn.disabled = on;
+    submitBtn.textContent = on ? "送出中…" : "送出申請";
+  }
+
+  submitBtn.addEventListener("click", function(){
+    if (state.sending) return;
+
+    var bad = validate();
+    if (bad){
+      showToast(bad.msg, true);
+      try { bad.el.focus({ preventScroll: false }); } catch(e){ bad.el.focus(); }
+      return;
+    }
+
+    // 跟現有 processLeaveForm 一致的欄位；
+    // 不帶 action / source / batchId / days —— 這是一般表單請假，
+    // 要走原本「行政核算天數」的審核流程，不是預休批次。
+    var payload = {
+      name: state.name,
+      dept: state.dept,
+      type: typeSelect.value,
+      start: toBackendTime(startInput.value),
+      end: toBackendTime(endInput.value),
+      reason: clean(reasonInput.value),
+      photoData: state.photoBase64 || "",
+      photoName: state.photoName || ""
+    };
+
+    setSending(true);
+
+    postJSON(LEAVE_GAS_URL, payload).then(function(result){
+      setSending(false);
+      if (isBackendSuccess(result)){
+        renderDoneSummary(payload);
+        showDone();
+      } else {
+        console.error("[請假] 送出失敗", result);
+        showToast("送出失敗：" + backendErrorMessage(result), true);
+      }
+    });
+  });
+
+  function renderDoneSummary(payload){
+    var el = document.getElementById("doneSummary");
+    el.innerHTML = "";
+    [
+      ["假別", payload.type],
+      ["開始", payload.start],
+      ["結束", payload.end],
+      ["理由", payload.reason],
+      ["證明", payload.photoData ? "已上傳 1 張" : "未上傳"]
+    ].forEach(function(pair){
+      var row = document.createElement("div");
+      var k = document.createElement("span");
+      k.className = "k";
+      k.textContent = pair[0];
+      row.appendChild(k);
+      row.appendChild(document.createTextNode(pair[1]));
+      el.appendChild(row);
+    });
+  }
+
+  document.getElementById("againBtn").addEventListener("click", function(){
+    typeSelect.value = "";
+    startInput.value = "";
+    endInput.value = "";
+    reasonInput.value = "";
+    resetPhoto();
+    photoField.style.display = "none";
+    durationHint.style.display = "none";
+    [typeSelect, startInput, endInput, reasonInput].forEach(clearError);
+    showMain();
+    window.scrollTo(0, 0);
+    loadQuota();
+    loadHistory();   // 剛送出的那筆會出現在紀錄裡
+  });
+
+  // ============================================================
+  // 初始化
+  // ============================================================
+
+  if (!urlUid){
+    showBlock("請從入口進入",
+      "請回到 LINE 的「員工系統」選單，點「請假申請」開啟", false);
+    return;
+  }
+
+  loadRoster();
+
+})();
+</script>
+</body>
+</html>
