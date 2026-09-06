@@ -254,6 +254,28 @@
   /* 顯示張數為奇數時，最後一張撐滿整列，右邊才不會留空 */
   .card.is-wide{ grid-column:1 / -1; }
 
+  /* 尚未開放的功能，點擊後的提示 */
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:calc(env(safe-area-inset-bottom) + 26px);
+    transform:translate(-50%, 12px);
+    max-width:calc(100% - 40px);
+    padding:11px 20px;
+    border-radius:999px;
+    background:rgba(74,66,61,.93);
+    color:#fff;
+    font-size:13.5px;
+    letter-spacing:.03em;
+    white-space:nowrap;
+    box-shadow:0 6px 20px rgba(74,66,61,.28);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .22s ease, transform .22s ease;
+    z-index:50;
+  }
+  .toast.is-on{ opacity:1; transform:translate(-50%, 0); }
+
   /* 查無資料／錯誤提示 */
   .notice{
     margin:0;
@@ -377,7 +399,7 @@
   <!-- 功能卡片：預設全部隱藏，由 JS 依部門開啟 -->
   <div class="cards" id="cards">
 
-    <button type="button" class="card" data-fn="預休登記" hidden>
+    <a class="card" data-fn="預休登記" id="cardPreleave" hidden>
       <span class="icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
              stroke-linecap="round" stroke-linejoin="round">
@@ -387,7 +409,7 @@
         </svg>
       </span>
       <span class="title">預休登記</span>
-    </button>
+    </a>
 
     <button type="button" class="card" data-fn="排班登記" hidden>
       <span class="icon" aria-hidden="true">
@@ -446,6 +468,18 @@
       <span class="title">月中介紹</span>
     </button>
 
+    <button type="button" class="card is-rose" data-fn="門市維護" hidden>
+      <span class="icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3.6 9.6h16.8V19a2 2 0 0 1-2 2H5.6a2 2 0 0 1-2-2z"/>
+          <path d="M3.2 9.6 5.3 4h13.4l2.1 5.6"/>
+          <path d="M9.6 21v-5.4h4.8V21"/>
+        </svg>
+      </span>
+      <span class="title">門市維護</span>
+    </button>
+
   </div>
 
   <!-- 查無資料／錯誤提示 -->
@@ -463,6 +497,8 @@
 
   <p class="foot">晴暢國際有限公司　內部使用</p>
 
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 </main>
 
 <script>
@@ -473,17 +509,22 @@
   // 各部門可見的功能（共通功能另外加）
   var DEPT_FUNCTIONS = {
     "行政": ["請假申請"],
-    "思庭": ["預休登記", "請假申請"],
-    "妥妥": ["預休登記", "請假申請"],
+    "思庭": ["預休登記", "請假申請", "月中介紹"],
+    "妥妥": ["預休登記", "請假申請", "月中介紹"],
     "倫倫": ["排班登記", "請假申請"],
     "老闆": ["報表"]
   };
-  var COMMON_FUNCTIONS = ["開會內容", "月中介紹"];
+  var COMMON_FUNCTIONS = ["開會內容", "門市維護"];
+
+  // 預休登記：帶 LIFF 身分連到獨立頁
+  var PRELEAVE_URL = "https://siting-lunlun-care.github.io/portal/preleave/";
 
   var elName   = document.getElementById("userName");
   var elMenu   = document.getElementById("menuLabel");
   var elCards  = document.getElementById("cards");
   var elNotice = document.getElementById("notice");
+  var elToast  = document.getElementById("toast");
+  var elPre    = document.getElementById("cardPreleave");
   var allCards = [].slice.call(elCards.querySelectorAll(".card"));
 
   var elBox    = document.getElementById("debugBox");
@@ -492,6 +533,22 @@
   var elUid    = document.getElementById("dbgUid");
   var elEnv    = document.getElementById("dbgEnv");
   var elMatch  = document.getElementById("dbgMatch");
+
+  // 尚未接上的功能，點了給個提示而不是靜悄悄沒反應
+  var toastTimer = null;
+  function showToast(msg){
+    elToast.textContent = msg;
+    elToast.classList.add("is-on");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ elToast.classList.remove("is-on"); }, 1900);
+  }
+
+  document.getElementById("cards").addEventListener("click", function(e){
+    var card = e.target.closest ? e.target.closest(".card") : null;
+    if (!card) return;
+    if (card.tagName === "A" && card.getAttribute("href")) return;  // 已接連結，正常前往
+    showToast(card.getAttribute("data-fn") + "　即將推出");
+  });
 
   function setState(cls, status){
     elBox.className = "debug " + cls;
@@ -514,7 +571,7 @@
   }
 
   // 依部門開啟對應卡片
-  function renderCards(dept){
+  function renderCards(dept, userId){
     var allow = (DEPT_FUNCTIONS[dept] || []).concat(COMMON_FUNCTIONS);
     var shown = [];
     allCards.forEach(function(c){
@@ -525,6 +582,15 @@
     });
     // 奇數張時最後一張撐滿整列
     if (shown.length % 2 === 1) shown[shown.length - 1].classList.add("is-wide");
+
+    // 預休登記帶上身分參數
+    if (!elPre.hidden) {
+      elPre.href = PRELEAVE_URL +
+        "?uid="  + encodeURIComponent(userId) +
+        "&dept=" + encodeURIComponent(dept);
+    } else {
+      elPre.removeAttribute("href");
+    }
     elNotice.hidden = true;
     elMenu.hidden = false;
     return shown.length;
@@ -611,7 +677,7 @@
             // 比對成功 → 用主檔姓名打招呼、依部門開卡片
             elName.textContent  = me.name;
             elMatch.textContent = me.name + "／" + me.dept + (me.area ? "／" + me.area : "");
-            var n = renderCards(me.dept);
+            var n = renderCards(me.dept, clean(profile.userId));
             setState("is-ok", "比對成功 ✓　部門：" + me.dept + "　功能 " + n + " 項");
           })
           .catch(function(err){
