@@ -1,1 +1,2956 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>員工預休登記</title>
+<style>
+  /* 金萱字型：跟入口頁一致。字型檔放在 portal 根目錄，預休模組放在
+     portal/preleave/ 子資料夾，所以用上一層路徑讀取。 */
+  @font-face {
+    font-family: "JinXuan";
+    src: url("../jinxuan_subset.woff2") format("woff2");
+    font-weight: 600;
+    font-display: swap;
+  }
 
+  :root{
+    --bg: #FFF8F4;
+    --card: #FFFFFF;
+    --ink: #4A3F3B;
+    --ink-soft: #8A7C76;
+    --accent: #E9A0A8;
+    --accent-dark: #C97882;
+    --accent-soft: #FBE3E6;
+    --line: #F1E4DF;
+    --today-ring: #E9A0A8;
+    --warn: #D9762F;
+    --warn-bg: #FDEEE0;
+    --ok: #4C8C6B;
+    --ok-bg: #E4F3EA;
+    --err: #C9575A;
+    --err-bg: #FBE7E6;
+    --btn2: #8BC34A;
+    --btn2-dark: #689F38;
+
+    /* 姐妹排休表：獨立配色，跟我的預休表（粉色系）區隔 */
+    --sisters-accent: #9B87C4;
+    --sisters-accent-dark: #6F58A3;
+    --sisters-accent-soft: #EFE9F8;
+    --sisters-warn: #4A7FC9;
+    --sisters-warn-bg: #E4EDFB;
+
+    --c-休假: #A9DCE0;  --t-休假: #1F5A5F;
+    --c-特休: #F6C6C9;  --t-特休: #8A3B3F;
+    --c-其他: #FCE29B;  --t-其他: #7A5B12;
+  }
+
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body{
+    margin:0;
+    background: linear-gradient(180deg, #FFF1EC 0%, #FFF8F4 220px, #FFF8F4 100%);
+    color: var(--ink);
+    font-family: "JinXuan", -apple-system, "PingFang TC", sans-serif;
+    padding-bottom: 96px;
+  }
+
+  /* 動態內容用系統字型，不用金萱瘦身字型：員工姓名、部門/區域（來自後端名單）、
+     其他假別的自由文字標籤、假日名稱、姐妹排休表的人名清單、上傳的照片檔名、
+     備註輸入框——這些都是不固定的文字，瘦身字型可能沒包含用到的字。 */
+  #deptSelect,
+  #areaSelect,
+  #employeeSelect,
+  #sistersDeptSelect,
+  #sistersAreaSelect,
+  #othersQuotaLine,
+  .holiday-note,
+  #sistersDayList,
+  #sistersWarningList,
+  .rr-photo-preview,
+  #reasonInput{
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+
+  .app{
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 18px 16px 24px;
+  }
+
+  header.top{
+    text-align: center;
+    margin-bottom: 18px;
+  }
+  header.top h1{
+    font-size: 20px;
+    margin: 0 0 2px;
+    font-weight: 700;
+  }
+  header.top p{
+    margin:0;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  .page-toggle{
+    display:flex;
+    background: var(--accent-soft);
+    border-radius: 999px;
+    padding: 4px;
+    margin-bottom: 16px;
+    gap: 4px;
+  }
+  .page-toggle-btn{
+    flex:1;
+    border:none;
+    background: transparent;
+    color: var(--accent-dark);
+    font-weight: 700;
+    font-size: 13px;
+    padding: 11px 6px;
+    border-radius: 999px;
+  }
+  .page-toggle-btn.active{
+    background: var(--accent-dark);
+    color: #fff;
+  }
+
+  .card{
+    background: var(--card);
+    border-radius: 20px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 6px 20px rgba(180, 130, 120, 0.08);
+  }
+
+  .employee-row{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+  }
+  .employee-row label{
+    font-size: 13px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .auto-identify-greeting{
+    margin: 0 0 4px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent-dark);
+  }
+  .auto-identify-greeting #autoIdentifyName{
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+
+  .triple-select-row{
+    display:flex;
+    gap: 8px;
+  }
+  .triple-select-col{
+    flex: 1;
+    min-width: 0;
+  }
+  .triple-select-col label{
+    display:block;
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .triple-select-col select{
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--accent-soft) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23C97882'><path d='M7 10l5 5 5-5z'/></svg>") no-repeat right 6px center;
+    background-size: 14px;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 22px 10px 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-dark);
+  }
+  .triple-select-col select:disabled{
+    opacity: 0.6;
+  }
+
+  select#sistersDeptSelect, select#sistersAreaSelect{
+    flex:1;
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--sisters-accent-soft) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236F58A3'><path d='M7 10l5 5 5-5z'/></svg>") no-repeat right 12px center;
+    background-size: 16px;
+    border: none;
+    border-radius: 14px;
+    padding: 12px 36px 12px 14px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--sisters-accent-dark);
+  }
+  select#sistersDeptSelect:disabled, select#sistersAreaSelect:disabled{
+    opacity: 0.6;
+  }
+
+  .month-nav{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .month-nav button{
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    font-size: 18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .month-nav button:active{ background: var(--accent); color:#fff; }
+  .month-nav h2{
+    font-size: 17px;
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .legend{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin-bottom: 10px;
+    justify-content: center;
+  }
+  .legend-item{
+    display:flex;
+    align-items:center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .legend-dot{
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .calendar-loading-hint{
+    text-align:center;
+    font-size: 12px;
+    color: var(--accent-dark);
+    margin-bottom: 8px;
+  }
+  .month-locked-hint{
+    text-align:center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--warn);
+    background: var(--warn-bg);
+    border-radius: 10px;
+    padding: 7px 10px;
+    margin-bottom: 10px;
+  }
+
+  .weekday-row{
+    display:grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 4px;
+  }
+  .weekday-row div{
+    text-align:center;
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-weight: 600;
+    padding: 4px 0;
+  }
+
+  .calendar-grid{
+    display:grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+  }
+
+  .day-cell{
+    position: relative;
+    aspect-ratio: 1 / 1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    background: #FBF6F3;
+    cursor: pointer;
+    user-select: none;
+  }
+  .day-cell.other-month{
+    color: #DCD0CB;
+    background: transparent;
+    cursor: default;
+    font-weight: 400;
+  }
+  .day-cell.today{
+    box-shadow: inset 0 0 0 2px var(--today-ring);
+  }
+  .day-cell.locked::after{
+    content: "🔒";
+    position: absolute;
+    top: -5px;
+    right: -3px;
+    font-size: 12px;
+  }
+  .day-cell .delete-x{
+    position: absolute;
+    top: -7px;
+    right: -5px;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    border-radius: 50%;
+    background: var(--err);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    z-index: 2;
+    cursor: pointer;
+  }
+  .day-cell .delete-x:active{
+    background: #A8393C;
+  }
+  .day-cell.month-locked{
+    cursor: default;
+  }
+  .day-cell.month-locked-empty{
+    background: #E3DDD9;
+    color: #AFA49D;
+  }
+  .day-cell .num{
+    position: relative;
+    z-index: 1;
+  }
+  .day-cell .num.holiday-red{
+    color: var(--err);
+  }
+  .day-cell .num.makeup-day{
+    border-bottom: 2px solid var(--ink-soft);
+    padding-bottom: 1px;
+  }
+
+  .holiday-note{
+    text-align:center;
+    font-size: 12px;
+    font-weight: 700;
+    margin: -6px 0 14px;
+  }
+  .holiday-note.holiday{ color: var(--err); }
+  .holiday-note.makeup{ color: var(--ink-soft); }
+
+  .day-cell.sisters-off{
+    background: var(--sisters-accent-soft);
+  }
+  .day-cell.sisters-warn{
+    background: var(--sisters-warn-bg);
+    color: var(--sisters-warn);
+    box-shadow: inset 0 0 0 2px var(--sisters-warn);
+  }
+  #sistersCalendarGrid .day-cell{
+    flex-direction: column;
+    gap: 1px;
+  }
+  .sisters-count{
+    position: relative;
+    z-index: 1;
+    font-size: 10px;
+    font-weight: 700;
+    margin-top: 1px;
+  }
+
+  .sisters-warning-row{
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .sisters-warning-row:last-child{ border-bottom: none; }
+  .sisters-warning-row .w-label{
+    display:inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--sisters-warn);
+    background: var(--sisters-warn-bg);
+    padding: 2px 8px;
+    border-radius: 999px;
+    margin-right: 6px;
+  }
+  .sisters-warn-note{
+    margin-top: 8px;
+    background: var(--sisters-warn-bg);
+    color: var(--sisters-warn);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 8px 10px;
+    border-radius: 10px;
+    line-height: 1.5;
+  }
+
+  .sisters-day-row{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    padding: 9px 4px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+  }
+  .sisters-day-row:last-child{ border-bottom: none; }
+
+  .count-row{
+    display:flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .count-pill{
+    flex:1;
+    text-align:center;
+    padding: 10px 4px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .count-pill .n{
+    display:block;
+    font-size: 18px;
+    margin-top: 2px;
+  }
+
+  .btn-secondary-wrap{
+    text-align: center;
+    margin: 2px 0 14px;
+  }
+  .btn-secondary{
+    border: none;
+    background: var(--btn2);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 12px 30px;
+    border-radius: 999px;
+    box-shadow: 0 6px 14px rgba(139, 195, 74, 0.35);
+  }
+  .btn-secondary:active{ background: var(--btn2-dark); }
+  .btn-secondary:disabled{
+    background: #D8CFCB;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+
+  .pick-row{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .pick-row:last-child{ border-bottom: none; }
+  .pick-row input[type=checkbox]{
+    width: 20px;
+    height: 20px;
+    accent-color: var(--accent-dark);
+    flex-shrink: 0;
+  }
+  .pick-date{
+    flex: 1;
+    font-weight: 600;
+  }
+
+  .day-list{
+    margin-top: 4px;
+  }
+  .day-row{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    padding: 11px 4px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+  }
+  .day-row:last-child{ border-bottom: none; }
+  .day-row .date-part{
+    display:flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .day-row .date-part .d{
+    font-weight: 700;
+  }
+  .day-row .date-part .sub-note{
+    font-size: 11px;
+    color: var(--ok);
+    font-weight: 600;
+  }
+  .pill{
+    display:inline-block;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .empty-hint{
+    text-align:center;
+    color: var(--ink-soft);
+    font-size: 13px;
+    padding: 18px 0;
+  }
+
+  h3.section-title{
+    font-size: 14px;
+    margin: 0 0 10px;
+    color: var(--ink);
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+
+  .footnote{
+    text-align:center;
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+    line-height: 1.6;
+  }
+
+  .submit-bar{
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(255,248,244,0) 0%, #FFF8F4 30%);
+    z-index: 40;
+  }
+  .submit-bar .inner{
+    max-width: 460px;
+    margin: 0 auto;
+  }
+  .btn-primary{
+    width: 100%;
+    border: none;
+    background: var(--accent-dark);
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+    padding: 15px;
+    border-radius: 16px;
+    box-shadow: 0 8px 18px rgba(201, 120, 130, 0.35);
+  }
+  .btn-primary:disabled{
+    background: #D8CFCB;
+    box-shadow: none;
+  }
+  .btn-primary:active:not(:disabled){ background: var(--accent); }
+
+  /* Modal */
+  .overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(60, 45, 40, 0.35);
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 50;
+  }
+  .overlay.active{
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .sheet{
+    width: 100%;
+    max-width: 460px;
+    background: var(--card);
+    border-radius: 22px 22px 0 0;
+    padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+    transform: translateY(100%);
+    transition: transform 0.25s ease;
+    max-height: 88vh;
+    overflow-y: auto;
+    position: relative;
+  }
+  .overlay.active .sheet{
+    transform: translateY(0);
+  }
+  .sheet-handle{
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--line);
+    margin: 0 auto 14px;
+    position: sticky;
+    top: 0;
+  }
+  .sheet h3{
+    text-align:center;
+    margin: 0 0 4px;
+    font-size: 16px;
+  }
+  .sheet .sub{
+    text-align:center;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-bottom: 16px;
+  }
+  .type-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .type-btn{
+    border: none;
+    border-radius: 14px;
+    padding: 16px 6px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    position: relative;
+  }
+  .type-btn.selected{
+    box-shadow: inset 0 0 0 3px rgba(0,0,0,0.18);
+  }
+  .type-btn.selected::after{
+    content: "✓";
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    font-size: 12px;
+  }
+  .type-btn:disabled{
+    opacity: 0.5;
+  }
+  .sheet-actions{
+    display:flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .btn-close{
+    border: none;
+    background: #F3EEEC;
+    color: var(--ink-soft);
+    font-weight: 600;
+    padding: 13px;
+    border-radius: 14px;
+    font-size: 14px;
+  }
+
+  .locked-msg{
+    text-align:center;
+    background: var(--warn-bg);
+    color: var(--warn);
+    font-weight: 600;
+    font-size: 14px;
+    padding: 16px;
+    border-radius: 14px;
+    margin-bottom: 6px;
+    line-height: 1.6;
+  }
+
+  .load-error{
+    margin-top: 12px;
+    background: var(--warn-bg);
+    border-radius: 14px;
+    padding: 12px;
+    text-align: center;
+  }
+  .load-error p{
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: var(--warn);
+    font-weight: 600;
+  }
+  .btn-retry-load{
+    border: none;
+    background: var(--warn);
+    color: #fff;
+    font-weight: 700;
+    padding: 9px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+  }
+
+  .quota-card{
+    margin-top: 12px;
+    background: #FBF6F3;
+    border-radius: 14px;
+    padding: 12px 14px;
+  }
+  .quota-card .quota-title{
+    display:flex;
+    align-items:center;
+    gap: 6px;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .quota-card .quota-title .dot{
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .quota-card .quota-row{
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1.7;
+  }
+  .quota-card .quota-row:empty{ display:none; }
+  .quota-card .quota-row.quota-warn{
+    color: var(--err);
+    font-weight: 700;
+  }
+  .quota-card .quota-row.quota-muted{
+    color: var(--ink-soft);
+  }
+
+  /* Toast */
+  .toast{
+    position: fixed;
+    left: 50%;
+    bottom: 96px;
+    transform: translate(-50%, 12px);
+    background: var(--ink);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s ease;
+    z-index: 90;
+    max-width: 85%;
+    text-align: center;
+  }
+  .toast.show{ opacity: 1; transform: translate(-50%, 0); }
+  .toast.error{ background: var(--err); }
+
+  /* Review sheet */
+  .review-row{
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .review-row .rr-top{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .rr-date{
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .rr-badge{
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  select.rr-subtype{
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: #FBF6F3;
+    font-size: 14px;
+    color: var(--ink);
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238A7C76'><path d='M7 10l5 5 5-5z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+  }
+  .rr-photo{
+    margin-top: 8px;
+  }
+  .rr-photo-label{
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-weight: 700;
+    margin-bottom: 6px;
+    display:block;
+  }
+  .rr-photo input[type=file]{
+    font-size: 12px;
+    width: 100%;
+  }
+  .rr-photo-preview{
+    margin-top: 8px;
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .rr-photo-preview img{
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+  }
+  .rr-warn{
+    margin-top: 8px;
+    background: var(--warn-bg);
+    color: var(--warn);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 8px 10px;
+    border-radius: 10px;
+    line-height: 1.5;
+  }
+
+  .reason-block{
+    margin: 4px 0 10px;
+  }
+  .reason-block label{
+    font-size: 12px;
+    color: var(--ink-soft);
+    display:block;
+    margin-bottom: 6px;
+  }
+  .reason-block textarea{
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    color: var(--ink);
+  }
+  .hint-text{
+    font-size: 11px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    text-align:center;
+    margin: 4px 0 4px;
+  }
+
+  /* Result sheet */
+  .result-row{
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .result-row:last-child{ border-bottom:none; }
+  .result-row-top{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+  }
+  .result-status{
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    display:flex;
+    align-items:center;
+    gap: 6px;
+  }
+  .rs-pending{ background: #F3EEEC; color: var(--ink-soft); }
+  .rs-ok{ background: var(--ok-bg); color: var(--ok); }
+  .rs-fail{ background: var(--err-bg); color: var(--err); }
+  .rs-warn{ background: var(--warn-bg); color: var(--warn); }
+  .btn-retry{
+    border: none;
+    background: var(--err);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 999px;
+    margin-left: 6px;
+  }
+  .result-row-note{
+    font-size: 11px;
+    color: var(--warn);
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+  #resultSummary{
+    text-align:center;
+    font-weight: 700;
+    margin-top: 12px;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <h1>🌸 員工預休登記</h1>
+    <p>晴暢集團 內部工具</p>
+  </header>
+
+  <div class="page-toggle">
+    <button type="button" class="page-toggle-btn active" id="toggleMineBtn">我的預休表</button>
+    <button type="button" class="page-toggle-btn" id="toggleSistersBtn">姐妹排休表</button>
+  </div>
+
+  <div id="minePageContent">
+
+  <!-- A段：部門／服務區域／員工選擇（三個並排）；如果從入口頁帶 uid 進來，
+       會自動認人、跳過這段選單，改顯示打招呼文字 -->
+  <div class="card">
+    <p class="auto-identify-greeting" id="autoIdentifyGreeting" style="display:none;">你好，<span id="autoIdentifyName"></span></p>
+    <div class="triple-select-row" id="selectFlowRow">
+      <div class="triple-select-col">
+        <label for="deptSelect">部門</label>
+        <select id="deptSelect" disabled><option value="">載入中...</option></select>
+      </div>
+      <div class="triple-select-col">
+        <label for="areaSelect">服務區域</label>
+        <select id="areaSelect" disabled><option value="">請先選部門</option></select>
+      </div>
+      <div class="triple-select-col">
+        <label for="employeeSelect">員工姓名</label>
+        <select id="employeeSelect" disabled><option value="">請先選區域</option></select>
+      </div>
+    </div>
+    <div class="load-error" id="loadError" style="display:none;">
+      <p>⚠️ 名單載入失敗，請確認網路連線</p>
+      <button id="retryLoadBtn" class="btn-retry-load">重新嘗試</button>
+    </div>
+
+    <div class="quota-card" id="annualQuotaCard" style="display:none;">
+      <div class="quota-title"><span class="dot" style="background:var(--c-特休);"></span>特休額度</div>
+      <div class="quota-row" id="annualQuotaLine">載入中...</div>
+    </div>
+
+    <div class="quota-card" id="othersQuotaCard" style="display:none;">
+      <div class="quota-title"><span class="dot" style="background:var(--c-其他);"></span>其他假別</div>
+      <div class="quota-row" id="othersQuotaLine">載入中...</div>
+    </div>
+
+    <div class="quota-card" id="vacationQuotaCard" style="display:none;">
+      <div class="quota-title"><span class="dot" style="background:var(--c-休假);"></span>休假額度</div>
+      <div class="quota-row" id="vacationQuotaLine">載入中...</div>
+    </div>
+  </div>
+
+  <!-- B/C段：月曆 -->
+  <div class="card">
+    <div class="month-nav">
+      <button id="prevMonth" aria-label="上個月">‹</button>
+      <h2 id="monthLabel">2026年9月</h2>
+      <button id="nextMonth" aria-label="下個月">›</button>
+    </div>
+
+    <div class="legend" id="legend"></div>
+    <div class="calendar-loading-hint" id="calendarLoadingHint" style="display:none;">載入中...</div>
+    <div class="month-locked-hint" id="monthLockedHint" style="display:none;">🔒 此月份已鎖定，僅供查看</div>
+
+    <div class="weekday-row">
+      <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+    </div>
+    <div class="calendar-grid" id="calendarGrid"></div>
+  </div>
+
+  <div class="card">
+    <h3 class="section-title">📋 本月預休清單</h3>
+    <div class="count-row" id="countRow"></div>
+    <div class="btn-secondary-wrap">
+      <button class="btn-secondary" id="sendLeaveBtn">送請假申請</button>
+    </div>
+    <div class="day-list" id="dayList"></div>
+  </div>
+
+  <p class="footnote">點日期可標記／取消標記；🔒代表已送出正式請假，不能再修改。畫好假別後按「儲存」存進系統；要正式請假時再按「送請假申請」，挑選要送出的特休、其他日期給主管審核，休假不需要送出。</p>
+
+  </div>
+  <!-- /minePageContent -->
+
+  <!-- 姐妹排休表 -->
+  <div id="sistersPageContent" style="display:none;">
+
+  <div class="card">
+    <div class="employee-row">
+      <label for="sistersDeptSelect">選擇部門</label>
+      <select id="sistersDeptSelect" disabled><option value="">載入中...</option></select>
+    </div>
+    <div class="employee-row" style="margin-top:10px;">
+      <label for="sistersAreaSelect">服務區域</label>
+      <select id="sistersAreaSelect" disabled><option value="">請先選擇部門</option></select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="month-nav">
+      <button id="sistersPrevMonth" aria-label="上個月">‹</button>
+      <h2 id="sistersMonthLabel">2026年9月</h2>
+      <button id="sistersNextMonth" aria-label="下個月">›</button>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot" style="background:var(--sisters-accent-soft);border:1px solid var(--sisters-accent);"></span><span>有人排休</span></div>
+      <div class="legend-item"><span class="legend-dot" style="background:var(--sisters-warn);"></span><span>警示</span></div>
+    </div>
+
+    <div class="weekday-row">
+      <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+    </div>
+    <div class="calendar-grid" id="sistersCalendarGrid"></div>
+  </div>
+
+  <div class="card">
+    <h3 class="section-title">⚠️ 本月警示摘要</h3>
+    <div id="sistersWarningList"></div>
+  </div>
+
+  <p class="footnote">點日期可查看當天排休名單。藍色標示：同一天有 2 人以上排休，或該員工連續排休 3 天（含）以上，建議互相協調喔。</p>
+
+  </div>
+  <!-- /sistersPageContent -->
+
+</div>
+
+<div class="submit-bar" id="submitBar">
+  <div class="inner">
+    <button class="btn-primary" id="submitBtn">儲存</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 標記/編輯/鎖定 sheet（B / C / D段） -->
+<div class="overlay" id="dayOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 id="dayDateLabel">2026年9月10日（四）</h3>
+    <p class="holiday-note" id="dayHolidayNote" style="display:none;"></p>
+
+    <div id="dayNormalView">
+      <p class="sub" id="dayDateSub">請選擇標記類型</p>
+      <div class="type-grid" id="dayTypeGrid"></div>
+      <div class="sheet-actions">
+        <button class="btn-close" id="dayCloseBtn">關閉</button>
+      </div>
+    </div>
+
+    <div id="dayLockedView" style="display:none;">
+      <p class="locked-msg" id="dayLockedMsg">🔒 已送請假，如需修改請聯絡行政</p>
+      <div class="sheet-actions">
+        <button class="btn-close" id="dayLockedCloseBtn">關閉</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 姐妹排休表：當天排休名單 sheet -->
+<div class="overlay" id="sistersDayOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 id="sistersDayDateLabel">2026年9月10日（四）</h3>
+    <p class="holiday-note" id="sistersDayHolidayNote" style="display:none;"></p>
+    <p class="sub" id="sistersDaySub"></p>
+    <div id="sistersDayList"></div>
+    <div class="sheet-actions">
+      <button class="btn-close" id="sistersDayCloseBtn">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- 送請假申請：勾選要送出的日期 sheet（E段入口） -->
+<div class="overlay" id="pickOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3>選擇要送出的日期</h3>
+    <p class="sub">勾選這次要送出的特休／其他</p>
+    <div id="pickList"></div>
+    <div class="sheet-actions">
+      <button class="btn-primary" id="pickNextBtn" disabled>下一步</button>
+      <button class="btn-close" id="pickCloseBtn">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 確認送出 sheet（E段） -->
+<div class="overlay" id="reviewOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3>確認送請假系統</h3>
+    <p class="sub" id="reviewSub">請確認以下日期與假別</p>
+    <div id="reviewList"></div>
+    <div class="reason-block">
+      <label for="reasonInput">備註（選填）</label>
+      <textarea id="reasonInput" rows="2" placeholder="可補充說明，不填也可以"></textarea>
+    </div>
+    <p class="hint-text">病假、事假可以附上證明照片，不附也能送出，但記得之後到 LINE 補傳給行政。</p>
+    <div class="sheet-actions">
+      <button class="btn-primary" id="confirmSendBtn" disabled>確認送出</button>
+      <button class="btn-close" id="reviewCloseBtn">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 送出結果 sheet（E段） -->
+<div class="overlay" id="resultOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3>送出結果</h3>
+    <div id="resultList"></div>
+    <p id="resultSummary"></p>
+    <div class="sheet-actions">
+      <button class="btn-primary" id="resultDoneBtn" style="display:none;">完成</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ============================================================
+  // 共用設定
+  // ============================================================
+
+  // 請假系統（拿名單、送正式請假）
+  var LEAVE_GAS_URL = "https://script.google.com/macros/s/AKfycbzitK29DxZdY8GKoWudHUXA8RBFHQBLQ7DUWuJeulM-zLkl7iMRvFYROThJgLVa9oDy/exec";
+  // 預休系統（存、讀、改、刪預休標記）
+  var PRELEAVE_GAS_URL = "https://script.google.com/macros/s/AKfycbxkkcbW63eeRag4TC11xceUlWqhgnQrKcZsoeG8q8V-NHUxSNCd9-8sst2LGwJrP-DW/exec";
+
+  var ALLOWED_DEPTS = ["思庭", "妥妥"];
+  var MARK_TYPES = ["休假", "特休", "其他"];
+  var SUBTYPES = ["事假", "病假", "喪假", "婚假", "產假", "產檢假"];
+  var PHOTO_OPTIONAL_TYPES = ["事假", "病假"];
+  var WEEKDAY_ZH = ["日","一","二","三","四","五","六"];
+
+  function pad(n){ return n < 10 ? "0" + n : "" + n; }
+  function isoDate(y, m, d){ return y + "-" + pad(m+1) + "-" + pad(d); }
+  function monthKey(y, m){ return y + "-" + pad(m+1); }
+
+  // 從網址讀取入口頁帶過來的身分參數（?uid=...&dept=...），手動解析＋
+  // decodeURIComponent，不用 URLSearchParams 是為了避免它已經自動解碼過一次、
+  // 再手動 decode 造成重複解碼的問題。
+  function getQueryParam(name){
+    var search = window.location.search.replace(/^\?/, "");
+    if (!search) return null;
+    var pairs = search.split("&");
+    for (var i = 0; i < pairs.length; i++){
+      if (!pairs[i]) continue;
+      var kv = pairs[i].split("=");
+      var key = decodeURIComponent((kv[0] || "").replace(/\+/g, " "));
+      if (key === name){
+        return kv.length > 1 ? decodeURIComponent(kv.slice(1).join("=").replace(/\+/g, " ")) : "";
+      }
+    }
+    return null;
+  }
+
+  var urlUid = getQueryParam("uid");
+  var urlDept = getQueryParam("dept"); // 目前只用 uid 查人；dept 先存著備用，不強制比對
+
+  // 整月鎖定規則（前端唯讀判斷，不動後端資料）：
+  // 以今天為準，往回推 3 個月（含）以前的「月份」整月鎖定，不分假別。
+  // 例：今天 9 月 → 6 月（含）以前整月鎖定，7、8、9 月可正常操作。
+  function isMonthLocked(year, month){
+    var viewYM = year * 12 + month;
+    var cutoffYM = now.getFullYear() * 12 + now.getMonth() - 3;
+    return viewYM <= cutoffYM;
+  }
+
+  // 把 dateStr 這天的國定假日／補班資訊顯示到日期詳情 sheet 裡的一個 <p> 元素上；
+  // 沒有假日資料就整段隱藏。單純顯示用，不影響畫假/鎖定/排休邏輯。
+  function applyHolidayNote(el, dateStr){
+    var holiday = holidayCache[dateStr];
+    if (!holiday){
+      el.style.display = "none";
+      el.textContent = "";
+      return;
+    }
+    el.style.display = "block";
+    if (holiday.isMakeup){
+      el.className = "holiday-note makeup";
+      el.textContent = "🔁 補班日" + (holiday.title ? "：" + holiday.title : "");
+    } else {
+      el.className = "holiday-note holiday";
+      el.textContent = "🎌 " + (holiday.title || "國定假日");
+    }
+  }
+
+  // GAS 的回應：GET 走 script.googleusercontent.com 轉址本來就帶 CORS 標頭可直接讀；
+  // POST 只要不用 application/json（避免觸發預檢 OPTIONS，Apps Script 沒實作 doOptions），
+  // 改用 text/plain 送出，也一樣會走同一個轉址、可以正常讀到回應內容——
+  // 所以這裡「不」使用 no-cors，而是直接用一般 fetch 讀取後端真正回傳的 JSON，
+  // 才能在畫面上顯示真正的成功/失敗，而不是只知道「送出去了」。
+  function postJSON(url, payload){
+    return fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+      cache: "no-store" // 避免瀏覽器快取到 GAS 轉址時效已過的舊回應，造成偶發 404
+    }).then(function(res){
+      return res.text().then(function(text){
+        var data = null;
+        try { data = text ? JSON.parse(text) : null; } catch(e){}
+        return { httpOk: res.ok, status: res.status, data: data, raw: text };
+      });
+    }).catch(function(err){
+      return { httpOk: false, networkError: true, error: err };
+    });
+  }
+
+  function getJSON(url){
+    return fetch(url, { cache: "no-store" }).then(function(res){
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    });
+  }
+
+  function isBackendSuccess(result){
+    if (!result || result.networkError || !result.httpOk) return false;
+    var d = result.data;
+    if (d && typeof d === "object"){
+      if (d.result === "ERROR") return false;
+      if (d.success === false) return false;
+      if (d.error) return false;
+    }
+    return true;
+  }
+
+  // 專門給「送假單到請假系統」這步用：後端有防重複機制，同一批次同一天同一人
+  // 重送會回傳 DUPLICATE，代表這筆本來就已經處理過了，一樣算成功、不用再送一次。
+  // 用「result 是 SUCCESS 或 DUPLICATE 就直接算成功」放在最前面判斷，
+  // 避免回應裡若還帶其他 error/message 欄位時被後面的條件誤判成失敗。
+  function isLeaveSendSuccess(result){
+    if (!result || result.networkError || !result.httpOk) return false;
+    var d = result.data;
+    if (d && typeof d === "object"){
+      if (d.result === "SUCCESS" || d.result === "DUPLICATE") return true;
+      if (d.result === "ERROR") return false;
+      if (d.success === false) return false;
+      if (d.error) return false;
+    }
+    return true;
+  }
+
+  function backendErrorMessage(result){
+    if (!result) return "未知錯誤";
+    if (result.networkError) return "網路連線失敗";
+    var d = result.data;
+    if (d && typeof d === "object"){
+      if (d.message) return d.message;
+      if (d.error) return String(d.error);
+    }
+    return "HTTP " + result.status;
+  }
+
+  // ---- 小提示 toast ----
+  var toastEl = document.getElementById("toast");
+  var toastTimer = null;
+  function showToast(msg, isError){
+    toastEl.textContent = msg;
+    toastEl.className = "toast show" + (isError ? " error" : "");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove("show"); }, 2400);
+  }
+
+  // ---- 狀態 ----
+  var now = new Date();
+  var state = {
+    dept: null,
+    employee: null,
+    userId: null,
+    viewYear: now.getFullYear(),
+    viewMonth: now.getMonth(),
+    selectedDate: null,
+    calendarData: {},   // { "YYYY-MM-DD": { category, leaveType, status } }，來源：預休後端
+    viewMode: "mine",   // "mine" | "sisters"
+    sistersDept: null,
+    sistersArea: null
+  };
+
+  // ============================================================
+  // A段：載入名單（部門 → 員工，記住 userId / dept）
+  // ============================================================
+
+  var deptSelect = document.getElementById("deptSelect");
+  var areaSelect = document.getElementById("areaSelect");
+  var employeeSelect = document.getElementById("employeeSelect");
+  var loadErrorEl = document.getElementById("loadError");
+  var retryLoadBtn = document.getElementById("retryLoadBtn");
+
+  var deptMembersMap = {}; // { "思庭": [{name,userId,dept,area}], "妥妥": [...] }
+  var currentAreaMembers = []; // 目前「部門+區域」篩出來的人，employeeSelect 的選項對應這個陣列的 index
+  var rosterLoaded = false;
+
+  function loadRoster(){
+    rosterLoaded = false;
+    loadErrorEl.style.display = "none";
+    deptSelect.disabled = true;
+    deptSelect.innerHTML = '<option value="">載入中...</option>';
+    resetAreaSelectPlaceholder();
+
+    getJSON(LEAVE_GAS_URL + "?action=getRoster")
+      .then(function(list){
+        deptMembersMap = {};
+        (list || []).forEach(function(emp){
+          if (!emp || ALLOWED_DEPTS.indexOf(emp.dept) === -1) return;
+          if (!deptMembersMap[emp.dept]) deptMembersMap[emp.dept] = [];
+          deptMembersMap[emp.dept].push(emp);
+        });
+        var availableDepts = ALLOWED_DEPTS.filter(function(d){
+          return deptMembersMap[d] && deptMembersMap[d].length > 0;
+        });
+        if (availableDepts.length === 0) throw new Error("名單為空");
+
+        populateSistersDeptSelect(availableDepts); // 姐妹排休表一律走選部門/區域，不受 uid 影響
+        rosterLoaded = true;
+
+        // 有從入口頁帶 uid 過來、且在名單裡找得到人 → 自動認人，跳過選單；
+        // 管理員（dept=管理員）不要自動認自己，維持「我的預休」手動選擇；
+        // 沒有 uid、或 uid 查無此人，一樣維持原本手動選擇流程當備援。
+        var autoEmp = (urlUid && urlDept !== "管理員") ? findEmployeeByUserId(urlUid) : null;
+        if (autoEmp){
+          applyAutoIdentifiedEmployee(autoEmp);
+        } else {
+          populateDeptSelect(availableDepts);
+        }
+      })
+      .catch(function(err){
+        console.error("[A段] 載入員工名單失敗", err);
+        showLoadError();
+      });
+  }
+
+  function populateDeptSelect(availableDepts){
+    deptSelect.innerHTML = "";
+    var placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "請選擇部門";
+    deptSelect.appendChild(placeholder);
+    availableDepts.forEach(function(d){
+      var opt = document.createElement("option");
+      opt.value = d;
+      opt.textContent = d;
+      deptSelect.appendChild(opt);
+    });
+    deptSelect.disabled = false;
+    deptSelect.value = "";
+    resetAreaSelectPlaceholder();
+    rosterLoaded = true;
+  }
+
+  // 服務區域選單：從選定部門的人裡收集所有出現過的區域（area 可能是「、」「，」「,」分隔的多個區域）
+  function populateAreaSelectForDept(dept){
+    var members = deptMembersMap[dept] || [];
+    var seen = {};
+    var areas = [];
+    members.forEach(function(emp){
+      splitAreas(emp.area).forEach(function(a){
+        if (!seen[a]){ seen[a] = true; areas.push(a); }
+      });
+    });
+
+    areaSelect.innerHTML = "";
+    var placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "請選擇區域";
+    areaSelect.appendChild(placeholder);
+    areas.forEach(function(a){
+      var opt = document.createElement("option");
+      opt.value = a;
+      opt.textContent = a;
+      areaSelect.appendChild(opt);
+    });
+    areaSelect.disabled = areas.length === 0;
+    areaSelect.value = "";
+    resetEmployeeSelectPlaceholder();
+  }
+
+  function resetAreaSelectPlaceholder(){
+    areaSelect.innerHTML = '<option value="">請先選部門</option>';
+    areaSelect.disabled = true;
+    resetEmployeeSelectPlaceholder();
+  }
+
+  function resetEmployeeSelectPlaceholder(){
+    employeeSelect.innerHTML = '<option value="">請先選區域</option>';
+    employeeSelect.disabled = true;
+    currentAreaMembers = [];
+    state.dept = null;
+    state.employee = null;
+    state.userId = null;
+    hideQuotaCards();
+  }
+
+  // 員工姓名選單：部門 + 服務區域都選定後，篩出「該部門 + 該區域（用包含判斷）」的人
+  function populateEmployeeSelectForArea(dept, area){
+    var members = deptMembersMap[dept] || [];
+    currentAreaMembers = members.filter(function(emp){ return empMatchesArea(emp, area); });
+
+    employeeSelect.innerHTML = "";
+    currentAreaMembers.forEach(function(emp, idx){
+      var opt = document.createElement("option");
+      opt.value = String(idx);
+      opt.textContent = emp.name;
+      employeeSelect.appendChild(opt);
+    });
+    employeeSelect.disabled = currentAreaMembers.length === 0;
+    if (currentAreaMembers.length > 0){
+      applySelectedEmployee(dept, currentAreaMembers[0]);
+      employeeSelect.value = "0";
+    } else {
+      state.employee = null;
+      state.userId = null;
+      hideQuotaCards();
+      renderAll();
+    }
+  }
+
+  function applySelectedEmployee(dept, emp){
+    state.dept = dept;
+    state.employee = emp.name;
+    state.userId = emp.userId;
+    // C段：切換員工不再打後端，直接從當月整月快取裡篩選這個人的資料
+    syncCurrentEmployeeFromCache();
+    renderAll();
+    loadAnnualQuota();     // 特休＋其他假：換人要重新打請假系統
+    renderVacationQuota(); // 休假額度：前端算，換人也要重算（分子分母都跟人有關）
+  }
+
+  // 從網址帶進來的 uid，在思庭／妥妥名單裡找對應的人
+  function findEmployeeByUserId(uid){
+    for (var i = 0; i < ALLOWED_DEPTS.length; i++){
+      var members = deptMembersMap[ALLOWED_DEPTS[i]] || [];
+      for (var j = 0; j < members.length; j++){
+        if (members[j].userId === uid) return members[j];
+      }
+    }
+    return null;
+  }
+
+  // 從入口頁帶 uid 進來、且在名單裡找到人：跳過「選部門/區域/員工」，
+  // 直接顯示打招呼文字＋這個人自己的預休。
+  function applyAutoIdentifiedEmployee(emp){
+    document.getElementById("selectFlowRow").style.display = "none";
+    document.getElementById("autoIdentifyName").textContent = emp.name;
+    document.getElementById("autoIdentifyGreeting").style.display = "block";
+    applySelectedEmployee(emp.dept, emp);
+  }
+
+  // ============================================================
+  // 假別額度總覽（唯讀顯示，只在「我的預休」頁面，不影響畫假/送請假）
+  // ============================================================
+
+  // 後端算出來的天數偶爾會有浮點數誤差（例如 0.2999999999999998），
+  // 純粹顯示用途，四捨五入到小數點下一位，不動後端、不影響任何判斷邏輯。
+  function roundQuotaDays(n){
+    if (typeof n !== "number" || isNaN(n)) return n;
+    return Math.round(n * 10) / 10;
+  }
+
+  function hideQuotaCards(){
+    document.getElementById("annualQuotaCard").style.display = "none";
+    document.getElementById("othersQuotaCard").style.display = "none";
+    document.getElementById("vacationQuotaCard").style.display = "none";
+  }
+
+  // 特休＋其他假別：GET 請假系統 getQuota，選定員工／載入時重新抓一次
+  var annualQuotaRequestSeq = 0;
+  function loadAnnualQuota(){
+    var mySeq = ++annualQuotaRequestSeq;
+    var annualCard = document.getElementById("annualQuotaCard");
+    var othersCard = document.getElementById("othersQuotaCard");
+    var lineEl = document.getElementById("annualQuotaLine");
+    var othersEl = document.getElementById("othersQuotaLine");
+
+    if (!state.dept || !state.employee){
+      annualCard.style.display = "none";
+      othersCard.style.display = "none";
+      return;
+    }
+
+    annualCard.style.display = "block";
+    othersCard.style.display = "block";
+    lineEl.className = "quota-row quota-muted";
+    lineEl.textContent = "載入中...";
+    othersEl.className = "quota-row quota-muted";
+    othersEl.textContent = "載入中...";
+
+    var url = LEAVE_GAS_URL + "?action=getQuota&dept=" + encodeURIComponent(state.dept) + "&name=" + encodeURIComponent(state.employee);
+    getJSON(url)
+      .then(function(data){
+        if (mySeq !== annualQuotaRequestSeq) return;
+        if (!data){
+          lineEl.className = "quota-row quota-muted";
+          lineEl.textContent = "查無額度資料";
+          othersEl.className = "quota-row quota-muted";
+          othersEl.textContent = "查無額度資料";
+          return;
+        }
+        lineEl.className = "quota-row";
+        lineEl.textContent = "特休　去年剩 " + roundQuotaDays(data.annualLastYear) + " 天　今年有 " + roundQuotaDays(data.annualTotal) + " 天　已請 " + roundQuotaDays(data.annualUsed) + " 天　剩 " + roundQuotaDays(data.annualLeft) + " 天";
+
+        var others = data.others || [];
+        othersEl.className = "quota-row";
+        if (others.length === 0){
+          othersEl.textContent = "今年已請　無";
+        } else {
+          othersEl.textContent = "今年已請　" + others.map(function(o){ return o.label + " " + roundQuotaDays(o.days) + " 天"; }).join("、");
+        }
+      })
+      .catch(function(err){
+        if (mySeq !== annualQuotaRequestSeq) return;
+        console.error("[額度] 讀取特休額度失敗", err);
+        lineEl.className = "quota-row quota-muted";
+        lineEl.textContent = "查無額度資料";
+        othersEl.className = "quota-row quota-muted";
+        othersEl.textContent = "查無額度資料";
+      });
+  }
+
+  // 休假額度：前端算，不打後端。可排 = 當月國定假日數 - 補班日數；已排 = 這個月標「休假」的天數。
+  // 只是顯示用，剩餘 0 或負數也不擋排休。
+  function renderVacationQuota(){
+    var card = document.getElementById("vacationQuotaCard");
+    var lineEl = document.getElementById("vacationQuotaLine");
+
+    if (!state.dept || !state.employee){
+      card.style.display = "none";
+      return;
+    }
+    card.style.display = "block";
+
+    var y = state.viewYear, m = state.viewMonth;
+    var holidayCount = 0, makeupCount = 0;
+    Object.keys(holidayCache).forEach(function(dateStr){
+      var d = new Date(dateStr + "T00:00:00");
+      if (d.getFullYear() !== y || d.getMonth() !== m) return;
+      if (holidayCache[dateStr].isMakeup) makeupCount++;
+      else holidayCount++;
+    });
+    var canSchedule = holidayCount - makeupCount;
+
+    var usedCount = 0;
+    Object.keys(state.calendarData).forEach(function(dateStr){
+      if (state.calendarData[dateStr].category === "休假") usedCount++;
+    });
+
+    var remaining = canSchedule - usedCount;
+    var remainingText;
+    if (remaining > 0){
+      remainingText = "剩餘 " + remaining + " 天";
+    } else if (remaining < 0){
+      remainingText = "多休 " + Math.abs(remaining) + " 天";
+    } else {
+      remainingText = "剛好休完";
+    }
+
+    lineEl.className = "quota-row" + (remaining <= 0 ? " quota-warn" : "");
+    lineEl.textContent = "本月可排休假 " + canSchedule + " 天　已排 " + usedCount + " 天　" + remainingText;
+  }
+
+  deptSelect.addEventListener("change", function(e){
+    var dept = e.target.value;
+    if (!dept){
+      resetAreaSelectPlaceholder();
+      renderAll();
+      return;
+    }
+    populateAreaSelectForDept(dept);
+  });
+
+  areaSelect.addEventListener("change", function(e){
+    var area = e.target.value;
+    if (!area){
+      resetEmployeeSelectPlaceholder();
+      renderAll();
+      return;
+    }
+    populateEmployeeSelectForArea(deptSelect.value, area);
+  });
+
+  employeeSelect.addEventListener("change", function(e){
+    var emp = currentAreaMembers[parseInt(e.target.value, 10)];
+    if (!emp) return;
+    applySelectedEmployee(state.dept, emp);
+  });
+
+  function showLoadError(){
+    deptSelect.innerHTML = '<option value="">⚠️ 名單載入失敗</option>';
+    deptSelect.disabled = true;
+    resetAreaSelectPlaceholder();
+    loadErrorEl.style.display = "block";
+  }
+
+  retryLoadBtn.addEventListener("click", loadRoster);
+
+  // ============================================================
+  // 姐妹排休表：部門 + 服務區域（用「包含」判斷，area 欄位可能是
+  // 用「、」「，」「,」分隔的多個區域）→ 顯示同組的人本月排休狀況
+  // ============================================================
+
+  var sistersDeptSelect = document.getElementById("sistersDeptSelect");
+  var sistersAreaSelect = document.getElementById("sistersAreaSelect");
+
+  function splitAreas(areaStr){
+    return (areaStr || "").split(/[,，、]+/).map(function(s){ return s.trim(); }).filter(Boolean);
+  }
+
+  function empMatchesArea(emp, area){
+    return splitAreas(emp.area).indexOf(area) !== -1;
+  }
+
+  function populateSistersDeptSelect(availableDepts){
+    sistersDeptSelect.innerHTML = "";
+    var placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "請選擇部門";
+    sistersDeptSelect.appendChild(placeholder);
+    availableDepts.forEach(function(d){
+      var opt = document.createElement("option");
+      opt.value = d;
+      opt.textContent = d;
+      sistersDeptSelect.appendChild(opt);
+    });
+    sistersDeptSelect.disabled = false;
+    sistersDeptSelect.value = "";
+    resetSistersAreaPlaceholder();
+  }
+
+  function resetSistersAreaPlaceholder(){
+    sistersAreaSelect.innerHTML = '<option value="">請先選擇部門</option>';
+    sistersAreaSelect.disabled = true;
+    state.sistersDept = null;
+    state.sistersArea = null;
+  }
+
+  function populateSistersAreaSelect(dept){
+    var members = deptMembersMap[dept] || [];
+    var seen = {};
+    var areas = [];
+    members.forEach(function(emp){
+      splitAreas(emp.area).forEach(function(a){
+        if (!seen[a]){ seen[a] = true; areas.push(a); }
+      });
+    });
+
+    sistersAreaSelect.innerHTML = "";
+    var placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "請選擇服務區域";
+    sistersAreaSelect.appendChild(placeholder);
+    areas.forEach(function(a){
+      var opt = document.createElement("option");
+      opt.value = a;
+      opt.textContent = a;
+      sistersAreaSelect.appendChild(opt);
+    });
+    sistersAreaSelect.disabled = areas.length === 0;
+    sistersAreaSelect.value = "";
+    state.sistersArea = null;
+  }
+
+  sistersDeptSelect.addEventListener("change", function(e){
+    var dept = e.target.value;
+    state.sistersDept = dept || null;
+    if (!dept){
+      resetSistersAreaPlaceholder();
+      renderSistersView();
+      return;
+    }
+    populateSistersAreaSelect(dept);
+    renderSistersView();
+  });
+
+  sistersAreaSelect.addEventListener("change", function(e){
+    state.sistersArea = e.target.value || null;
+    renderSistersView();
+  });
+
+  function getSistersGroupMembers(){
+    if (!state.sistersDept || !state.sistersArea) return [];
+    var members = deptMembersMap[state.sistersDept] || [];
+    return members.filter(function(emp){ return empMatchesArea(emp, state.sistersArea); });
+  }
+
+  // 掃過整月快取（monthCache 已經有「全部人」這個月的預休），
+  // 篩出目前這組部門+區域的人，算出：
+  // (a) 每天有誰排休 (b) 同天 2 人以上的警示日 (c) 個人連續 3 天以上的警示
+  function computeSistersMonthData(){
+    var members = getSistersGroupMembers();
+
+    var offByDate = {}; // "YYYY-MM-DD" -> [{name, userId, category}]
+    members.forEach(function(emp){
+      var entries = monthCache[emp.userId] || {};
+      Object.keys(entries).forEach(function(dateStr){
+        if (!offByDate[dateStr]) offByDate[dateStr] = [];
+        offByDate[dateStr].push({ name: emp.name, userId: emp.userId, category: entries[dateStr].category });
+      });
+    });
+
+    var multiWarnDates = {};
+    Object.keys(offByDate).forEach(function(dateStr){
+      if (offByDate[dateStr].length >= 2) multiWarnDates[dateStr] = true;
+    });
+
+    var consecutiveWarnDates = {}; // dateStr -> [names...]
+    var consecutiveSummaries = []; // {name, startDate, endDate, days}
+    members.forEach(function(emp){
+      var dates = Object.keys(monthCache[emp.userId] || {}).sort();
+      var i = 0;
+      while (i < dates.length){
+        var j = i;
+        while (j + 1 < dates.length){
+          var cur = new Date(dates[j] + "T00:00:00").getTime();
+          var next = new Date(dates[j+1] + "T00:00:00").getTime();
+          if (next - cur === 86400000){ j++; } else { break; }
+        }
+        var runLen = j - i + 1;
+        if (runLen >= 3){
+          for (var k = i; k <= j; k++){
+            if (!consecutiveWarnDates[dates[k]]) consecutiveWarnDates[dates[k]] = [];
+            consecutiveWarnDates[dates[k]].push(emp.name);
+          }
+          consecutiveSummaries.push({ name: emp.name, startDate: dates[i], endDate: dates[j], days: runLen });
+        }
+        i = j + 1;
+      }
+    });
+
+    return {
+      offByDate: offByDate,
+      multiWarnDates: multiWarnDates,
+      consecutiveWarnDates: consecutiveWarnDates,
+      consecutiveSummaries: consecutiveSummaries
+    };
+  }
+
+  var sistersComputed = { offByDate: {}, multiWarnDates: {}, consecutiveWarnDates: {}, consecutiveSummaries: [] };
+
+  function renderSistersView(){
+    var y = state.viewYear, m = state.viewMonth;
+    document.getElementById("sistersMonthLabel").textContent = y + "年" + (m+1) + "月";
+
+    var grid = document.getElementById("sistersCalendarGrid");
+    var warningListEl = document.getElementById("sistersWarningList");
+
+    if (!state.sistersDept || !state.sistersArea){
+      grid.innerHTML = "";
+      warningListEl.innerHTML = '<div class="empty-hint">請先選擇部門與服務區域</div>';
+      return;
+    }
+
+    sistersComputed = computeSistersMonthData();
+
+    var firstDayOfWeek = new Date(y, m, 1).getDay();
+    var daysInMonth = new Date(y, m+1, 0).getDate();
+    var daysInPrevMonth = new Date(y, m, 0).getDate();
+    var totalCells = Math.ceil((firstDayOfWeek + daysInMonth) / 7) * 7;
+    var todayIso = isoDate(now.getFullYear(), now.getMonth(), now.getDate());
+
+    grid.innerHTML = "";
+    for (var i = 0; i < totalCells; i++){
+      var cell = document.createElement("div");
+      cell.className = "day-cell";
+
+      var dayNum, cellIso, inCurrentMonth = true;
+      if (i < firstDayOfWeek){
+        dayNum = daysInPrevMonth - (firstDayOfWeek - 1 - i);
+        inCurrentMonth = false;
+      } else if (i >= firstDayOfWeek + daysInMonth){
+        dayNum = i - (firstDayOfWeek + daysInMonth) + 1;
+        inCurrentMonth = false;
+      } else {
+        dayNum = i - firstDayOfWeek + 1;
+      }
+
+      if (inCurrentMonth){
+        cellIso = isoDate(y, m, dayNum);
+      } else {
+        cell.classList.add("other-month");
+      }
+
+      var numSpan = document.createElement("span");
+      numSpan.className = "num";
+      numSpan.textContent = dayNum;
+      cell.appendChild(numSpan);
+
+      if (inCurrentMonth){
+        var offList = sistersComputed.offByDate[cellIso] || [];
+        var isWarn = !!sistersComputed.multiWarnDates[cellIso] || !!sistersComputed.consecutiveWarnDates[cellIso];
+
+        if (offList.length > 0){
+          cell.classList.add(isWarn ? "sisters-warn" : "sisters-off");
+          var countSpan = document.createElement("span");
+          countSpan.className = "sisters-count";
+          countSpan.textContent = offList.length + "人";
+          cell.appendChild(countSpan);
+        }
+
+        var holiday = holidayCache[cellIso];
+        if (holiday){
+          numSpan.classList.add(holiday.isMakeup ? "makeup-day" : "holiday-red");
+        }
+
+        if (cellIso === todayIso) cell.classList.add("today");
+
+        cell.addEventListener("click", (function(dateStr){
+          return function(){ openSistersDaySheet(dateStr); };
+        })(cellIso));
+      }
+
+      grid.appendChild(cell);
+    }
+
+    renderSistersWarningList();
+  }
+
+  function renderSistersWarningList(){
+    var el = document.getElementById("sistersWarningList");
+    el.innerHTML = "";
+
+    var multiDates = Object.keys(sistersComputed.multiWarnDates).sort();
+    var hasAny = multiDates.length > 0 || sistersComputed.consecutiveSummaries.length > 0;
+
+    if (!hasAny){
+      el.innerHTML = '<div class="empty-hint">本月沒有警示</div>';
+      return;
+    }
+
+    multiDates.forEach(function(dateStr){
+      var names = sistersComputed.offByDate[dateStr].map(function(p){ return p.name; }).join("、");
+      var row = document.createElement("div");
+      row.className = "sisters-warning-row";
+      row.innerHTML = '<span class="w-label">同天多人</span>' + formatDateLabel(dateStr) + '：' + sistersComputed.offByDate[dateStr].length + ' 人排休（' + names + '）';
+      el.appendChild(row);
+    });
+
+    sistersComputed.consecutiveSummaries.forEach(function(s){
+      var row = document.createElement("div");
+      row.className = "sisters-warning-row";
+      row.innerHTML = '<span class="w-label">連續排休</span>' + s.name + '：' + formatDateLabel(s.startDate) + ' ～ ' + formatDateLabel(s.endDate) + '，共 ' + s.days + ' 天';
+      el.appendChild(row);
+    });
+  }
+
+  var sistersDayOverlay = document.getElementById("sistersDayOverlay");
+  var sistersDayCloseBtn = document.getElementById("sistersDayCloseBtn");
+
+  function openSistersDaySheet(dateStr){
+    var d = new Date(dateStr + "T00:00:00");
+    document.getElementById("sistersDayDateLabel").textContent = d.getFullYear() + "年" + (d.getMonth()+1) + "月" + d.getDate() + "日（" + WEEKDAY_ZH[d.getDay()] + "）";
+    applyHolidayNote(document.getElementById("sistersDayHolidayNote"), dateStr);
+
+    var offList = sistersComputed.offByDate[dateStr] || [];
+    var subEl = document.getElementById("sistersDaySub");
+    var listEl = document.getElementById("sistersDayList");
+    listEl.innerHTML = "";
+
+    if (offList.length === 0){
+      subEl.textContent = "這天沒有人排休";
+    } else {
+      subEl.textContent = "共 " + offList.length + " 人排休";
+      offList.forEach(function(p){
+        var row = document.createElement("div");
+        row.className = "sisters-day-row";
+        var nameSpan = document.createElement("span");
+        nameSpan.textContent = p.name;
+        row.appendChild(nameSpan);
+        var pill = document.createElement("span");
+        pill.className = "pill";
+        pill.style.background = "var(--c-" + p.category + ")";
+        pill.style.color = "var(--t-" + p.category + ")";
+        pill.textContent = p.category;
+        row.appendChild(pill);
+        listEl.appendChild(row);
+      });
+      if (sistersComputed.multiWarnDates[dateStr]){
+        var warnNote = document.createElement("div");
+        warnNote.className = "sisters-warn-note";
+        warnNote.textContent = "⚠️ 這天同區域有 2 人以上排休";
+        listEl.appendChild(warnNote);
+      }
+      if (sistersComputed.consecutiveWarnDates[dateStr]){
+        var namesInStreak = sistersComputed.consecutiveWarnDates[dateStr].join("、");
+        var streakNote = document.createElement("div");
+        streakNote.className = "sisters-warn-note";
+        streakNote.textContent = "⚠️ " + namesInStreak + " 連續排休 3 天以上";
+        listEl.appendChild(streakNote);
+      }
+    }
+
+    sistersDayOverlay.classList.add("active");
+  }
+
+  sistersDayCloseBtn.addEventListener("click", function(){ sistersDayOverlay.classList.remove("active"); });
+  sistersDayOverlay.addEventListener("click", function(e){ if (e.target === sistersDayOverlay) sistersDayOverlay.classList.remove("active"); });
+
+  // 姐妹排休表的月份切換：跟「我的預休表」共用同一個 state.viewYear/viewMonth
+  // 跟同一份整月快取（loadMonthAllForCurrentView），兩邊月份永遠同步
+  document.getElementById("sistersPrevMonth").addEventListener("click", function(){
+    state.viewMonth--;
+    if (state.viewMonth < 0){ state.viewMonth = 11; state.viewYear--; }
+    loadMonthAllForCurrentView();
+  });
+  document.getElementById("sistersNextMonth").addEventListener("click", function(){
+    state.viewMonth++;
+    if (state.viewMonth > 11){ state.viewMonth = 0; state.viewYear++; }
+    loadMonthAllForCurrentView();
+  });
+
+  // ---- 頁面切換：我的預休表 / 姐妹排休表 ----
+  var minePageContent = document.getElementById("minePageContent");
+  var sistersPageContent = document.getElementById("sistersPageContent");
+  var submitBarEl = document.getElementById("submitBar");
+  var toggleMineBtn = document.getElementById("toggleMineBtn");
+  var toggleSistersBtn = document.getElementById("toggleSistersBtn");
+
+  toggleMineBtn.addEventListener("click", function(){
+    state.viewMode = "mine";
+    minePageContent.style.display = "block";
+    sistersPageContent.style.display = "none";
+    submitBarEl.style.display = "block";
+    toggleMineBtn.classList.add("active");
+    toggleSistersBtn.classList.remove("active");
+  });
+
+  function switchToSistersPage(){
+    state.viewMode = "sisters";
+    minePageContent.style.display = "none";
+    sistersPageContent.style.display = "block";
+    submitBarEl.style.display = "none";
+    toggleSistersBtn.classList.add("active");
+    toggleMineBtn.classList.remove("active");
+    renderSistersView();
+  }
+
+  toggleSistersBtn.addEventListener("click", switchToSistersPage);
+
+  // 網址帶 dept=管理員 進來：管理員不是要登記自己的假，預設直接打開姐妹排休表，
+  // 而且不做「我的預休」自動認人（見下面 loadRoster 成功回呼裡的判斷）。
+  if (urlDept === "管理員"){
+    switchToSistersPage();
+  }
+
+  // ============================================================
+  // 渲染：圖例、月曆、本月摘要
+  // ============================================================
+
+  function renderLegend(){
+    var el = document.getElementById("legend");
+    el.innerHTML = "";
+    MARK_TYPES.forEach(function(t){
+      var item = document.createElement("div");
+      item.className = "legend-item";
+      var dot = document.createElement("span");
+      dot.className = "legend-dot";
+      dot.style.background = "var(--c-" + t + ")";
+      item.appendChild(dot);
+      var label = document.createElement("span");
+      label.textContent = t;
+      item.appendChild(label);
+      el.appendChild(item);
+    });
+  }
+
+  function renderCalendar(){
+    var y = state.viewYear, m = state.viewMonth;
+    document.getElementById("monthLabel").textContent = y + "年" + (m+1) + "月";
+
+    var monthLocked = isMonthLocked(y, m);
+    document.getElementById("monthLockedHint").style.display = monthLocked ? "block" : "none";
+    document.getElementById("sendLeaveBtn").disabled = monthLocked; // 鎖定月份不能送請假，按鈕直接灰掉
+
+    var grid = document.getElementById("calendarGrid");
+    grid.innerHTML = "";
+
+    var firstDayOfWeek = new Date(y, m, 1).getDay();
+    var daysInMonth = new Date(y, m+1, 0).getDate();
+    var daysInPrevMonth = new Date(y, m, 0).getDate();
+    var totalCells = Math.ceil((firstDayOfWeek + daysInMonth) / 7) * 7;
+
+    var todayIso = isoDate(now.getFullYear(), now.getMonth(), now.getDate());
+
+    for (var i = 0; i < totalCells; i++){
+      var cell = document.createElement("div");
+      cell.className = "day-cell";
+
+      var dayNum, cellIso, inCurrentMonth = true;
+
+      if (i < firstDayOfWeek){
+        dayNum = daysInPrevMonth - (firstDayOfWeek - 1 - i);
+        inCurrentMonth = false;
+      } else if (i >= firstDayOfWeek + daysInMonth){
+        dayNum = i - (firstDayOfWeek + daysInMonth) + 1;
+        inCurrentMonth = false;
+      } else {
+        dayNum = i - firstDayOfWeek + 1;
+      }
+
+      if (inCurrentMonth){
+        cellIso = isoDate(y, m, dayNum);
+      } else {
+        cell.classList.add("other-month");
+      }
+
+      var numSpan = document.createElement("span");
+      numSpan.className = "num";
+      numSpan.textContent = dayNum;
+      cell.appendChild(numSpan);
+
+      if (inCurrentMonth){
+        var entry = state.calendarData[cellIso];
+        if (monthLocked) cell.classList.add("month-locked");
+
+        if (entry){
+          cell.style.background = "var(--c-" + entry.category + ")";
+          cell.style.color = "var(--t-" + entry.category + ")";
+          if ((entry.status && entry.status !== "預休中") || monthLocked){
+            cell.classList.add("locked");
+          } else {
+            // 預休中、且這個月沒被鎖 → 用小叉叉直接刪，不用進選單
+            var delBtn = document.createElement("span");
+            delBtn.className = "delete-x";
+            delBtn.textContent = "✕";
+            delBtn.setAttribute("aria-label", "刪除這天的預休標記");
+            delBtn.addEventListener("click", (function(dateStr, btnEl){
+              return function(e){
+                e.stopPropagation();
+                if (btnEl.dataset.busy === "1") return;
+                btnEl.dataset.busy = "1";
+                btnEl.style.opacity = "0.35";
+                removeDay(dateStr);
+              };
+            })(cellIso, delBtn));
+            cell.appendChild(delBtn);
+          }
+        } else if (monthLocked){
+          cell.classList.add("month-locked-empty");
+        }
+
+        var holiday = holidayCache[cellIso];
+        if (holiday){
+          numSpan.classList.add(holiday.isMakeup ? "makeup-day" : "holiday-red");
+        }
+
+        if (cellIso === todayIso){
+          cell.classList.add("today");
+        }
+        if (state.employee){
+          cell.addEventListener("click", (function(dateStr){
+            return function(){ openDaySheet(dateStr); };
+          })(cellIso));
+        } else {
+          cell.style.cursor = "default";
+        }
+      }
+
+      grid.appendChild(cell);
+    }
+  }
+
+  function renderSummary(){
+    var listEl = document.getElementById("dayList");
+    var countRow = document.getElementById("countRow");
+
+    if (!state.employee){
+      countRow.innerHTML = "";
+      MARK_TYPES.forEach(function(t){
+        var pill = document.createElement("div");
+        pill.className = "count-pill";
+        pill.style.background = "var(--c-" + t + ")";
+        pill.style.color = "var(--t-" + t + ")";
+        pill.innerHTML = t + '<span class="n">0 天</span>';
+        countRow.appendChild(pill);
+      });
+      listEl.innerHTML = '<div class="empty-hint">請先選擇部門與員工</div>';
+      return;
+    }
+
+    var dates = Object.keys(state.calendarData).sort();
+    var counts = { "休假": 0, "特休": 0, "其他": 0 };
+    dates.forEach(function(dateStr){ counts[state.calendarData[dateStr].category]++; });
+
+    countRow.innerHTML = "";
+    MARK_TYPES.forEach(function(t){
+      var pill = document.createElement("div");
+      pill.className = "count-pill";
+      pill.style.background = "var(--c-" + t + ")";
+      pill.style.color = "var(--t-" + t + ")";
+      pill.innerHTML = t + '<span class="n">' + counts[t] + " 天</span>";
+      countRow.appendChild(pill);
+    });
+
+    listEl.innerHTML = "";
+    if (dates.length === 0){
+      listEl.innerHTML = '<div class="empty-hint">本月尚未標記任何日期</div>';
+      return;
+    }
+
+    dates.forEach(function(dateStr){
+      var d = new Date(dateStr + "T00:00:00");
+      var entry = state.calendarData[dateStr];
+
+      var row = document.createElement("div");
+      row.className = "day-row";
+
+      var datePart = document.createElement("div");
+      datePart.className = "date-part";
+
+      var dLine = document.createElement("span");
+      dLine.className = "d";
+      dLine.textContent = (d.getMonth()+1) + "/" + d.getDate() + "（" + WEEKDAY_ZH[d.getDay()] + "）";
+      datePart.appendChild(dLine);
+
+      var note = document.createElement("span");
+      note.className = "sub-note";
+      if (entry.status === "已送請假"){
+        note.textContent = "🔒 已送請假（" + (entry.leaveType || entry.category) + "）";
+      } else if ((entry.status && entry.status !== "預休中") || isMonthLocked(state.viewYear, state.viewMonth)){
+        note.textContent = "🔒 已鎖定";
+      } else if (entry.category !== "休假"){
+        note.textContent = "尚未送請假";
+        note.style.color = "var(--warn)";
+      }
+      if (note.textContent) datePart.appendChild(note);
+
+      row.appendChild(datePart);
+
+      var pill = document.createElement("span");
+      pill.className = "pill";
+      pill.style.background = "var(--c-" + entry.category + ")";
+      pill.style.color = "var(--t-" + entry.category + ")";
+      pill.textContent = entry.category;
+      row.appendChild(pill);
+
+      listEl.appendChild(row);
+    });
+  }
+
+  function renderAll(){
+    renderCalendar();
+    renderSummary();
+  }
+
+  // ============================================================
+  // C段：讀回顯示 —— 一次撈整月「全部人」的預休存在記憶體，
+  // 切員工不打後端，只從這份快取裡篩選；只有切月份才重新撈。
+  // ============================================================
+
+  var calendarLoadingHint = document.getElementById("calendarLoadingHint");
+
+  // monthCache：{ userId: { "YYYY-MM-DD": {category, leaveType, status, synced} } }，
+  // 永遠對應「目前月曆顯示的那個月」（monthCacheKey）。
+  var monthCache = {};
+  var monthCacheKey = null;
+
+  // holidayCache：{ "YYYY-MM-DD": {title, isMakeup} }，國定假日／補班日，跟員工無關、全員共用。
+  var holidayCache = {};
+
+  // 快速切換月份時，先送出的請求可能比後送出的還晚回來（GAS 有時不穩定）。
+  // 用一個遞增序號記錄「目前這次才是最新的請求」，比對後才套用結果，
+  // 避免舊的回應蓋掉新的畫面（曾經實測發生過這個問題）。
+  var monthCacheRequestSeq = 0;
+
+  function loadMonthAllForCurrentView(){
+    var mySeq = ++monthCacheRequestSeq;
+    var mKey = monthKey(state.viewYear, state.viewMonth);
+
+    calendarLoadingHint.style.display = "block";
+    var url = PRELEAVE_GAS_URL + "?action=getMonthAll&month=" + encodeURIComponent(mKey);
+
+    var preleavePromise = getJSON(url)
+      .then(function(list){
+        if (mySeq !== monthCacheRequestSeq) return; // 已經有更新的請求了，這筆回應是舊的，丟棄
+        var cache = {};
+        (list || []).forEach(function(item){
+          if (!item || !item.userId || !item.date) return;
+          if (!cache[item.userId]) cache[item.userId] = {};
+          cache[item.userId][item.date] = {
+            category: item.category,
+            leaveType: item.leaveType || "",
+            status: item.status || "預休中",
+            synced: true // 這筆是從後端讀回來的，跟後端一致
+          };
+        });
+        monthCache = cache;
+        monthCacheKey = mKey;
+      })
+      .catch(function(err){
+        if (mySeq !== monthCacheRequestSeq) return;
+        console.error("[C段] 讀取整月預休資料失敗", err);
+        monthCache = {};
+        monthCacheKey = mKey;
+        showToast("讀取本月預休資料失敗，請重新整理再試", true);
+      });
+
+    // 國定假日／補班日只是視覺標記，跟這次撈預休資料同時觸發，
+    // 但獨立 try/catch，抓假日失敗不能連累原本的預休資料顯示。
+    var holidaysPromise = loadHolidaysForCurrentView(mySeq, mKey);
+
+    Promise.all([preleavePromise, holidaysPromise]).then(function(){
+      if (mySeq !== monthCacheRequestSeq) return;
+      calendarLoadingHint.style.display = "none";
+      syncCurrentEmployeeFromCache();
+      renderAll();
+      renderSistersView(); // 姐妹排休表用的是同一份整月快取，一起更新
+      renderVacationQuota(); // 休假額度跟月份有關（國定假日數 + 當月已排休），切月要重算
+    });
+  }
+
+  function loadHolidaysForCurrentView(mySeq, mKey){
+    var url = PRELEAVE_GAS_URL + "?action=getHolidays&month=" + encodeURIComponent(mKey);
+    return getJSON(url)
+      .then(function(list){
+        if (mySeq !== monthCacheRequestSeq) return;
+        var cache = {};
+        (list || []).forEach(function(h){
+          if (!h || !h.date) return;
+          cache[h.date] = { title: h.title || "", isMakeup: !!h.isMakeup };
+        });
+        holidayCache = cache;
+      })
+      .catch(function(err){
+        if (mySeq !== monthCacheRequestSeq) return;
+        console.error("[假日] 讀取國定假日失敗", err);
+        holidayCache = {}; // 抓不到就不顯示假日標記，不影響畫假/鎖定/排休
+      });
+  }
+
+  // 從整月快取裡篩出目前選定員工（用 userId 比對）的資料，畫到 state.calendarData
+  function syncCurrentEmployeeFromCache(){
+    if (!state.userId){
+      state.calendarData = {};
+      return;
+    }
+    var fromCache = monthCache[state.userId] || {};
+    var data = {};
+    Object.keys(fromCache).forEach(function(dateStr){
+      var e = fromCache[dateStr];
+      data[dateStr] = { category: e.category, leaveType: e.leaveType, status: e.status, synced: e.synced };
+    });
+    state.calendarData = data;
+  }
+
+  // 存 / 改 / 刪之後，直接更新記憶體裡對應這個人這一天的資料，不用重新打後端
+  function patchCacheEntry(userId, dateStr, entry){
+    if (!monthCache[userId]) monthCache[userId] = {};
+    monthCache[userId][dateStr] = entry;
+    if (userId === state.userId){
+      state.calendarData[dateStr] = entry;
+    }
+  }
+
+  function deleteCacheEntry(userId, dateStr){
+    if (monthCache[userId]) delete monthCache[userId][dateStr];
+    if (userId === state.userId){
+      delete state.calendarData[dateStr];
+    }
+  }
+
+  document.getElementById("prevMonth").addEventListener("click", function(){
+    state.viewMonth--;
+    if (state.viewMonth < 0){ state.viewMonth = 11; state.viewYear--; }
+    loadMonthAllForCurrentView();
+  });
+
+  document.getElementById("nextMonth").addEventListener("click", function(){
+    state.viewMonth++;
+    if (state.viewMonth > 11){ state.viewMonth = 0; state.viewYear++; }
+    loadMonthAllForCurrentView();
+  });
+
+  // ============================================================
+  // B段：月曆畫假 + 存進預休後端
+  // D段：改 / 刪預休標記、已送請假的鎖定提示
+  // ============================================================
+
+  var dayOverlay = document.getElementById("dayOverlay");
+  var dayNormalView = document.getElementById("dayNormalView");
+  var dayLockedView = document.getElementById("dayLockedView");
+  var dayLockedMsg = document.getElementById("dayLockedMsg");
+  var dayTypeGrid = document.getElementById("dayTypeGrid");
+  var dayDateLabel = document.getElementById("dayDateLabel");
+  var dayDateSub = document.getElementById("dayDateSub");
+  var dayCloseBtn = document.getElementById("dayCloseBtn");
+  var dayLockedCloseBtn = document.getElementById("dayLockedCloseBtn");
+
+  function buildDayTypeGrid(currentCategory, disabled){
+    dayTypeGrid.innerHTML = "";
+    MARK_TYPES.forEach(function(t){
+      var btn = document.createElement("button");
+      btn.className = "type-btn";
+      btn.style.background = "var(--c-" + t + ")";
+      btn.style.color = "var(--t-" + t + ")";
+      btn.textContent = t;
+      if (t === currentCategory) btn.classList.add("selected");
+      btn.disabled = !!disabled;
+      btn.addEventListener("click", function(){
+        setDayCategoryLocal(state.selectedDate, t);
+      });
+      dayTypeGrid.appendChild(btn);
+    });
+  }
+
+  function openDaySheet(dateStr){
+    state.selectedDate = dateStr;
+    var d = new Date(dateStr + "T00:00:00");
+    dayDateLabel.textContent = d.getFullYear() + "年" + (d.getMonth()+1) + "月" + d.getDate() + "日（" + WEEKDAY_ZH[d.getDay()] + "）";
+    applyHolidayNote(document.getElementById("dayHolidayNote"), dateStr);
+
+    var entry = state.calendarData[dateStr];
+
+    if (entry && entry.status === "已送請假"){
+      dayLockedMsg.textContent = "🔒 已送請假，如需修改請聯絡行政";
+      dayNormalView.style.display = "none";
+      dayLockedView.style.display = "block";
+    } else if (entry && entry.status && entry.status !== "預休中"){
+      dayLockedMsg.textContent = "🔒 已鎖定，如需修改請聯絡行政";
+      dayNormalView.style.display = "none";
+      dayLockedView.style.display = "block";
+    } else if (isMonthLocked(state.viewYear, state.viewMonth)){
+      dayLockedMsg.textContent = "🔒 此月份已鎖定，僅供查看";
+      dayNormalView.style.display = "none";
+      dayLockedView.style.display = "block";
+    } else {
+      dayNormalView.style.display = "block";
+      dayLockedView.style.display = "none";
+      dayDateSub.textContent = "請選擇標記類型";
+      buildDayTypeGrid(entry ? entry.category : null, false);
+    }
+
+    dayOverlay.classList.add("active");
+  }
+
+  function closeDaySheet(){
+    dayOverlay.classList.remove("active");
+    state.selectedDate = null;
+  }
+
+  // B段：畫格子只更新記憶體裡的暫存資料，不即時寫後端；要按最下面的「儲存」才會批次寫入
+  function setDayCategoryLocal(dateStr, category){
+    var prev = state.calendarData[dateStr];
+    var entry = {
+      category: category,
+      leaveType: (prev && prev.leaveType) || "",
+      status: "預休中",
+      synced: false
+    };
+    patchCacheEntry(state.userId, dateStr, entry);
+    closeDaySheet();
+    renderAll();
+    renderVacationQuota(); // 標記類別可能是「休假」，已排天數要跟著變
+  }
+
+  // D段：刪除一天的預休標記。這天如果還沒存到後端過（本地暫存），直接從記憶體移除即可；
+  // 如果是從後端讀回來、已經存在的紀錄，才需要真的呼叫後端刪除。
+  function removeDay(dateStr){
+    var entry = state.calendarData[dateStr];
+    if (!entry) { closeDaySheet(); return; }
+
+    if (!entry.synced){
+      deleteCacheEntry(state.userId, dateStr);
+      closeDaySheet();
+      renderAll();
+      renderVacationQuota();
+      showToast("已移除標記");
+      return;
+    }
+
+    postJSON(PRELEAVE_GAS_URL, { action: "deletePreLeave", userId: state.userId, date: dateStr }).then(function(result){
+      if (!isBackendSuccess(result)){
+        showToast("移除失敗：" + backendErrorMessage(result), true);
+        renderAll(); // 重畫一次讓叉叉恢復可點（不然會卡在半透明的「處理中」樣子）
+        return;
+      }
+      showToast("已移除標記");
+      deleteCacheEntry(state.userId, dateStr);
+      closeDaySheet();
+      renderAll();
+      renderVacationQuota();
+    });
+  }
+
+  dayCloseBtn.addEventListener("click", closeDaySheet);
+  dayLockedCloseBtn.addEventListener("click", closeDaySheet);
+  dayOverlay.addEventListener("click", function(e){ if (e.target === dayOverlay) closeDaySheet(); });
+
+  // 「儲存」：把目前月曆上畫的預休一次批次寫入後端（已送請假的不會被動到）
+  var submitBtn = document.getElementById("submitBtn");
+  submitBtn.addEventListener("click", function(){
+    if (!state.dept || !state.employee){
+      alert("請先選擇部門與員工姓名。");
+      return;
+    }
+    if (isMonthLocked(state.viewYear, state.viewMonth)){
+      alert("此月份已鎖定，僅供查看，無法儲存。");
+      return;
+    }
+
+    var dates = Object.keys(state.calendarData).filter(function(dateStr){
+      return state.calendarData[dateStr].status !== "已送請假";
+    });
+
+    if (dates.length === 0){
+      alert("目前沒有需要儲存的預休標記。");
+      return;
+    }
+
+    submitBtn.disabled = true;
+    var originalText = submitBtn.textContent;
+    submitBtn.textContent = "儲存中...";
+
+    var writes = dates.map(function(dateStr){
+      var entry = state.calendarData[dateStr];
+      return postJSON(PRELEAVE_GAS_URL, {
+        action: "savePreLeave",
+        name: state.employee,
+        userId: state.userId,
+        dept: state.dept,
+        date: dateStr,
+        category: entry.category,
+        leaveType: entry.leaveType || "",
+        status: "預休中"
+      });
+    });
+
+    Promise.all(writes).then(function(results){
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
+      var failCount = 0;
+      dates.forEach(function(dateStr, idx){
+        if (isBackendSuccess(results[idx])){
+          var entry = state.calendarData[dateStr];
+          patchCacheEntry(state.userId, dateStr, {
+            category: entry.category,
+            leaveType: entry.leaveType || "",
+            status: "預休中",
+            synced: true
+          });
+        } else {
+          failCount++;
+        }
+      });
+      if (failCount > 0){
+        showToast("已儲存，但有 " + failCount + " 筆失敗，請再試一次", true);
+      } else {
+        showToast("已儲存成功");
+      }
+      renderAll();
+    });
+  });
+
+  // ============================================================
+  // E段：確認送請假系統（送到請假系統 + 回寫預休狀態）
+  // ============================================================
+
+  var reviewOverlay = document.getElementById("reviewOverlay");
+  var reviewList = document.getElementById("reviewList");
+  var reasonInput = document.getElementById("reasonInput");
+  var confirmSendBtn = document.getElementById("confirmSendBtn");
+  var reviewCloseBtn = document.getElementById("reviewCloseBtn");
+  var reviewSub = document.getElementById("reviewSub");
+
+  var pendingRows = []; // { dateStr, category, subtype, photoBase64, photoName }
+
+  // 「送請假申請」入口：先掃出本月非休假、還在預休中的日期，讓員工勾選要送哪幾筆
+  var pickOverlay = document.getElementById("pickOverlay");
+  var pickList = document.getElementById("pickList");
+  var pickNextBtn = document.getElementById("pickNextBtn");
+  var pickCloseBtn = document.getElementById("pickCloseBtn");
+  var pickCandidates = [];
+
+  document.getElementById("sendLeaveBtn").addEventListener("click", function(){
+    // 這幾個提醒改用畫面上的 toast，不用瀏覽器原生 alert()——
+    // 手機瀏覽器（尤其重複跳好幾次 alert 之後的 iOS Safari，或 LINE 等
+    // App 內建瀏覽器）常常會靜音擋掉原生對話框，導致「點了完全沒反應」。
+    if (!rosterLoaded){
+      showToast("員工名單尚未載入完成，請稍候再試，或點選名單旁的「重新嘗試」。", true);
+      return;
+    }
+    if (!state.dept || !state.employee){
+      showToast("請先選擇部門與員工姓名。", true);
+      return;
+    }
+    if (isMonthLocked(state.viewYear, state.viewMonth)){
+      showToast("此月份已鎖定，僅供查看，無法送出。", true);
+      return;
+    }
+
+    // 「需要送的假」＝當月特休／其他，休假不算；已送請假的不算「還需要送」，
+    // 但要分開判斷「本來就沒有特休/其他」跟「有、但都已經送過了」，提醒文字不一樣。
+    var specialDates = Object.keys(state.calendarData).filter(function(dateStr){
+      return state.calendarData[dateStr].category !== "休假";
+    });
+
+    if (specialDates.length === 0){
+      showToast("當月無特殊假需申請", true);
+      return;
+    }
+
+    var dates = specialDates.filter(function(dateStr){
+      return state.calendarData[dateStr].status === "預休中";
+    }).sort();
+
+    if (dates.length === 0){
+      showToast("當月特殊假皆已完成申請", true);
+      return;
+    }
+
+    pickCandidates = dates;
+    renderPickList();
+    pickOverlay.classList.add("active");
+  });
+
+  function renderPickList(){
+    pickList.innerHTML = "";
+    pickCandidates.forEach(function(dateStr){
+      var entry = state.calendarData[dateStr];
+      var row = document.createElement("label");
+      row.className = "pick-row";
+
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = true;
+      cb.dataset.date = dateStr;
+      cb.addEventListener("change", updatePickNextState);
+      row.appendChild(cb);
+
+      var dateSpan = document.createElement("span");
+      dateSpan.className = "pick-date";
+      dateSpan.textContent = formatDateLabel(dateStr);
+      row.appendChild(dateSpan);
+
+      var badge = document.createElement("span");
+      badge.className = "rr-badge";
+      badge.style.background = "var(--c-" + entry.category + ")";
+      badge.style.color = "var(--t-" + entry.category + ")";
+      badge.textContent = entry.category;
+      row.appendChild(badge);
+
+      pickList.appendChild(row);
+    });
+    updatePickNextState();
+  }
+
+  function updatePickNextState(){
+    var anyChecked = Array.prototype.some.call(
+      pickList.querySelectorAll('input[type=checkbox]'),
+      function(cb){ return cb.checked; }
+    );
+    pickNextBtn.disabled = !anyChecked;
+  }
+
+  pickNextBtn.addEventListener("click", function(){
+    var checkedDates = Array.prototype.map.call(
+      pickList.querySelectorAll('input[type=checkbox]:checked'),
+      function(cb){ return cb.dataset.date; }
+    );
+    pickOverlay.classList.remove("active");
+    openReviewForDates(checkedDates);
+  });
+  pickCloseBtn.addEventListener("click", function(){ pickOverlay.classList.remove("active"); });
+  pickOverlay.addEventListener("click", function(e){ if (e.target === pickOverlay) pickOverlay.classList.remove("active"); });
+
+  // 送出流程照舊：勾選確定的日期進到確認送出 sheet
+  function openReviewForDates(dates){
+    pendingRows = dates.map(function(dateStr){
+      var entry = state.calendarData[dateStr];
+      return {
+        dateStr: dateStr,
+        category: entry.category,
+        subtype: entry.category === "特休" ? "特休" : "",
+        photoBase64: "",
+        photoName: ""
+      };
+    });
+
+    reasonInput.value = "";
+    reviewSub.textContent = "共 " + pendingRows.length + " 筆，請確認假別";
+    renderReviewList();
+    updateConfirmState();
+    reviewOverlay.classList.add("active");
+  }
+
+  function formatDateLabel(dateStr){
+    var d = new Date(dateStr + "T00:00:00");
+    return (d.getMonth()+1) + "/" + d.getDate() + "（" + WEEKDAY_ZH[d.getDay()] + "）";
+  }
+
+  function renderReviewList(){
+    reviewList.innerHTML = "";
+    pendingRows.forEach(function(row){
+      var box = document.createElement("div");
+      box.className = "review-row";
+
+      var top = document.createElement("div");
+      top.className = "rr-top";
+
+      var dateEl = document.createElement("span");
+      dateEl.className = "rr-date";
+      dateEl.textContent = formatDateLabel(row.dateStr);
+      top.appendChild(dateEl);
+
+      var badge = document.createElement("span");
+      badge.className = "rr-badge";
+      badge.style.background = "var(--c-" + row.category + ")";
+      badge.style.color = "var(--t-" + row.category + ")";
+      badge.textContent = row.category;
+      top.appendChild(badge);
+
+      box.appendChild(top);
+
+      if (row.category === "其他"){
+        var select = document.createElement("select");
+        select.className = "rr-subtype";
+        var placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "請選擇假別";
+        select.appendChild(placeholder);
+        SUBTYPES.forEach(function(st){
+          var opt = document.createElement("option");
+          opt.value = st;
+          opt.textContent = st;
+          select.appendChild(opt);
+        });
+        select.value = row.subtype;
+        select.addEventListener("change", function(){
+          row.subtype = select.value;
+          row.photoBase64 = "";
+          row.photoName = "";
+          renderReviewList();
+          updateConfirmState();
+        });
+        box.appendChild(select);
+
+        if (PHOTO_OPTIONAL_TYPES.indexOf(row.subtype) !== -1){
+          var photoWrap = document.createElement("div");
+          photoWrap.className = "rr-photo";
+
+          var label = document.createElement("span");
+          label.className = "rr-photo-label";
+          label.textContent = "📎 可上傳" + row.subtype + "證明照片（選填）";
+          photoWrap.appendChild(label);
+
+          var fileInput = document.createElement("input");
+          fileInput.type = "file";
+          fileInput.accept = "image/*";
+          fileInput.addEventListener("change", function(){
+            var file = fileInput.files[0];
+            if (!file) return;
+            compressImageToBase64(file).then(function(base64){
+              row.photoBase64 = base64;
+              row.photoName = file.name;
+              renderReviewList();
+              updateConfirmState();
+            }).catch(function(){
+              alert("這張照片讀取失敗，請重新選擇。");
+            });
+          });
+          photoWrap.appendChild(fileInput);
+
+          if (row.photoBase64){
+            var preview = document.createElement("div");
+            preview.className = "rr-photo-preview";
+            var img = document.createElement("img");
+            img.src = row.photoBase64;
+            preview.appendChild(img);
+            var nameSpan = document.createElement("span");
+            nameSpan.textContent = "已選擇：" + row.photoName;
+            preview.appendChild(nameSpan);
+            photoWrap.appendChild(preview);
+          } else {
+            var warn = document.createElement("div");
+            warn.className = "rr-warn";
+            warn.textContent = "⚠️ 尚未上傳證明，送出後請記得到 LINE 補傳給行政";
+            photoWrap.appendChild(warn);
+          }
+
+          box.appendChild(photoWrap);
+        }
+      }
+
+      reviewList.appendChild(box);
+    });
+  }
+
+  function updateConfirmState(){
+    var allValid = pendingRows.every(function(row){
+      if (row.category === "特休") return true;
+      return !!row.subtype; // 「其他」一定要選出實際假別，照片是選填
+    });
+    confirmSendBtn.disabled = !allValid;
+  }
+
+  reviewCloseBtn.addEventListener("click", function(){
+    reviewOverlay.classList.remove("active");
+  });
+  reviewOverlay.addEventListener("click", function(e){
+    if (e.target === reviewOverlay) reviewOverlay.classList.remove("active");
+  });
+
+  // 壓縮照片並轉成完整 data URL base64（後端用開頭 data:image/...;base64, 判斷 MIME 類型，
+  // 所以絕對不能只送純 base64、一定要保留完整開頭）
+  function compressImageToBase64(file){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(e){
+        var img = new Image();
+        img.onload = function(){
+          var maxDim = 1280;
+          var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          var w = Math.max(1, Math.round(img.width * scale));
+          var h = Math.max(1, Math.round(img.height * scale));
+          var canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          var ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL("image/jpeg", 0.75));
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  var resultOverlay = document.getElementById("resultOverlay");
+  var resultList = document.getElementById("resultList");
+  var resultSummary = document.getElementById("resultSummary");
+  var resultDoneBtn = document.getElementById("resultDoneBtn");
+
+  confirmSendBtn.addEventListener("click", function(){
+    if (confirmSendBtn.disabled) return;
+    reviewOverlay.classList.remove("active");
+    runSendFlow();
+  });
+
+  function buildLeavePayload(row, batchId){
+    // 注意：不能帶 action 欄位，後端才會當成正式請假單處理
+    return {
+      name: state.employee,
+      type: row.category === "特休" ? "特休" : row.subtype,
+      start: row.dateStr + " 09:00",
+      end: row.dateStr + " 18:00",
+      reason: reasonInput.value || "",
+      dept: state.dept,
+      photoData: row.photoBase64 || "",
+      photoName: row.photoName || "",
+      source: "預休",
+      batchId: batchId,
+      days: 1
+    };
+  }
+
+  function buildPreLeaveStatusPayload(row){
+    return {
+      action: "savePreLeave",
+      name: state.employee,
+      userId: state.userId,
+      dept: state.dept,
+      date: row.dateStr,
+      category: row.category,
+      leaveType: row.category === "特休" ? "特休" : row.subtype,
+      status: "已送請假"
+    };
+  }
+
+  function runSendFlow(){
+    resultList.innerHTML = "";
+    resultSummary.textContent = "";
+    resultDoneBtn.style.display = "none";
+
+    // 同一次送出的所有筆共用同一個批次編號，全部送完後用它觸發主管的彙整審核卡片
+    var batchId = "PL" + Date.now();
+
+    var rowEls = pendingRows.map(function(row){
+      var el = document.createElement("div");
+      el.className = "result-row";
+
+      var top = document.createElement("div");
+      top.className = "result-row-top";
+
+      var left = document.createElement("span");
+      left.textContent = formatDateLabel(row.dateStr) + " " + (row.category === "特休" ? "特休" : row.subtype);
+      top.appendChild(left);
+
+      var status = document.createElement("span");
+      status.className = "result-status rs-pending";
+      status.textContent = "⏳ 送出中";
+      top.appendChild(status);
+
+      el.appendChild(top);
+
+      var note = document.createElement("div");
+      note.className = "result-row-note";
+      note.style.display = "none";
+      el.appendChild(note);
+
+      resultList.appendChild(el);
+      return { el: el, status: status, note: note, row: row, leaveSent: false };
+    });
+
+    resultOverlay.classList.add("active");
+
+    // 步驟一：送到請假系統（正式假單）
+    function sendLeave(item){
+      item.status.className = "result-status rs-pending";
+      item.status.textContent = "⏳ 送出中";
+      item.note.style.display = "none";
+
+      postJSON(LEAVE_GAS_URL, buildLeavePayload(item.row, batchId)).then(function(result){
+        if (!isLeaveSendSuccess(result)){
+          item.status.innerHTML = "";
+          var txt = document.createElement("span");
+          txt.textContent = "❌ 假單送出失敗";
+          item.status.className = "result-status rs-fail";
+          item.status.appendChild(txt);
+          var retryBtn = document.createElement("button");
+          retryBtn.className = "btn-retry";
+          retryBtn.textContent = "重試";
+          retryBtn.addEventListener("click", function(){ sendLeave(item); });
+          item.status.appendChild(retryBtn);
+          item.note.style.display = "block";
+          item.note.textContent = backendErrorMessage(result);
+          updateFinalSummary(rowEls);
+          return;
+        }
+        item.leaveSent = true;
+        updatePreLeaveStatus(item);
+      });
+    }
+
+    // 步驟二：假單送出成功後，回寫預休系統狀態為「已送請假」。
+    // 這步失敗不代表假單沒送出（步驟一已經成功），所以：
+    // (a) 失敗時自動重試 2 次（間隔 800ms），通常是這一步的暫時性問題，重試就過了；
+    // (b) 自動重試都失敗才顯示「狀態未同步」的提醒＋手動重試按鈕，且這筆不會被算進「送出失敗」。
+    function updatePreLeaveStatus(item, attempt){
+      attempt = attempt || 1;
+      item.status.className = "result-status rs-pending";
+      item.status.textContent = attempt > 1 ? ("⏳ 更新狀態中（自動重試 " + (attempt - 1) + "）") : "⏳ 更新狀態中";
+
+      postJSON(PRELEAVE_GAS_URL, buildPreLeaveStatusPayload(item.row)).then(function(result){
+        if (!isBackendSuccess(result)){
+          if (attempt < 3){
+            setTimeout(function(){ updatePreLeaveStatus(item, attempt + 1); }, 800);
+            return;
+          }
+          item.status.innerHTML = "";
+          var txt = document.createElement("span");
+          txt.textContent = "⚠️ 假單已送出，狀態未同步";
+          item.status.className = "result-status rs-warn";
+          item.status.appendChild(txt);
+          var retryBtn = document.createElement("button");
+          retryBtn.className = "btn-retry";
+          retryBtn.textContent = "重試更新";
+          retryBtn.addEventListener("click", function(){ updatePreLeaveStatus(item); });
+          item.status.appendChild(retryBtn);
+          item.note.style.display = "block";
+          item.note.textContent = "假單已經送給主管了，只是本頁面的狀態沒更新成功，請勿重新送出這天的假，可稍後重試更新，或請行政協助確認。";
+          updateFinalSummary(rowEls);
+          return;
+        }
+        item.status.className = "result-status rs-ok";
+        item.status.textContent = "✅ 已送出";
+        item.note.style.display = "none";
+        item.note.textContent = "";
+        // 記憶體裡的整月快取也一併更新成「已送請假」，不用重新打後端整月重撈
+        patchCacheEntry(state.userId, item.row.dateStr, {
+          category: item.row.category,
+          leaveType: item.row.category === "特休" ? "特休" : item.row.subtype,
+          status: "已送請假",
+          synced: true
+        });
+        if (PHOTO_OPTIONAL_TYPES.indexOf(item.row.subtype) !== -1 && !item.row.photoBase64){
+          item.note.style.display = "block";
+          item.note.textContent = "⚠️ 尚未附證明，請記得到 LINE 補傳給行政";
+        }
+        updateFinalSummary(rowEls);
+      });
+    }
+
+    // 全部筆都處理完之後，才用同一個 batchId 觸發主管的彙整審核卡片
+    // （後端要用 batchId 撈齊這批的所有筆，一定要等逐筆都送完才能送這個）。
+    // 如果整批一筆都沒有真的送出去，batchId 底下沒有任何紀錄，就不送這個卡片了。
+    function sendBatchCardIfNeeded(){
+      var anySent = rowEls.some(function(r){ return r.leaveSent; });
+      if (!anySent) return Promise.resolve();
+      return postJSON(LEAVE_GAS_URL, { action: "sendBatchCard", batchId: batchId }).then(function(result){
+        if (!isBackendSuccess(result)){
+          console.error("[E段] 觸發彙整審核卡片失敗", result);
+          resultSummary.textContent += "\n（提醒：主管的彙整審核卡片通知失敗，請確認主管是否已收到審核通知）";
+        }
+      });
+    }
+
+    function runAll(idx){
+      if (idx >= rowEls.length){
+        sendBatchCardIfNeeded().then(function(){
+          renderAll(); // 全部處理完，用記憶體裡最新的快取重新畫面
+          resultDoneBtn.style.display = "block";
+        });
+        return;
+      }
+      var item = rowEls[idx];
+      sendLeave(item);
+      // 為了避免同時大量打後端，逐筆循序處理；用一個小 poll 等這筆結束再送下一筆
+      var checkInterval = setInterval(function(){
+        var t = item.status.textContent;
+        if (t.indexOf("送出中") === -1 && t.indexOf("更新狀態中") === -1){
+          clearInterval(checkInterval);
+          runAll(idx + 1);
+        }
+      }, 200);
+    }
+
+    runAll(0);
+  }
+
+  function updateFinalSummary(rowEls){
+    var doneCount = rowEls.filter(function(r){ return r.status.textContent.indexOf("✅") !== -1; }).length;
+    var missingPhotoCount = rowEls.filter(function(r){
+      return r.status.textContent.indexOf("✅") !== -1 &&
+             PHOTO_OPTIONAL_TYPES.indexOf(r.row.subtype) !== -1 && !r.row.photoBase64;
+    }).length;
+    var failCount = rowEls.filter(function(r){ return r.status.textContent.indexOf("❌") !== -1; }).length;
+    var warnCount = rowEls.filter(function(r){ return r.status.textContent.indexOf("⚠️") !== -1; }).length;
+
+    var text = "已送出 " + doneCount + " 筆，請等待主管審核";
+    if (missingPhotoCount > 0) text += "；未附證明的請記得到 LINE 補傳";
+    if (failCount > 0) text += "\n（尚有 " + failCount + " 筆假單送出失敗，可點選重試）";
+    if (warnCount > 0) text += "\n（尚有 " + warnCount + " 筆假單已送出但狀態未同步，請點選重試更新，或聯絡行政確認）";
+    resultSummary.textContent = text;
+    resultSummary.style.whiteSpace = "pre-line";
+  }
+
+  resultDoneBtn.addEventListener("click", function(){
+    resultOverlay.classList.remove("active");
+  });
+
+  // ---- 初始化 ----
+  renderLegend();
+  renderAll();
+  loadRoster();
+  loadMonthAllForCurrentView(); // C段：進入頁面就先撈這個月「全部人」的預休存進記憶體
+
+})();
+</script>
+</body>
+</html>
