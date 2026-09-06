@@ -6,7 +6,19 @@
 <meta name="theme-color" content="#FBFAF8">
 <title>晴暢集團 員工系統</title>
 <style>
+  /* ---------- 金萱字型（同目錄 woff2 瘦身檔） ---------- */
+  @font-face{
+    font-family:"JinXuan";
+    src:url("jinxuan_subset.woff2") format("woff2");
+    font-weight:600;
+    font-display:swap;
+  }
+
   :root{
+    /* 固定文字用金萱；動態姓名用系統字型 */
+    --font-display: "JinXuan", -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif;
+    --font-system:  -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif;
+
     /* ---- 底色：暖白（取自思庭新版 #FCF9F5） ---- */
     --bg:            #FBFAF8;
     --surface:       #FFFFFF;
@@ -49,7 +61,7 @@
   body{
     margin:0;
     min-height:100dvh;
-    font-family:-apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+    font-family:var(--font-display);
     color:var(--ink);
     background:var(--bg);
     /* 頂部光暈：左邊霧藍（倫倫）、右邊藕粉（思庭），都極淡 */
@@ -63,8 +75,9 @@
 
   .wrap{
     width:100%;
-    max-width:520px;
-    margin:0 auto;
+    max-width:500px;
+    margin-inline:auto;
+    text-align:center;
     padding:
       calc(env(safe-area-inset-top) + 30px)
       20px
@@ -75,6 +88,7 @@
   .brandbar{
     display:flex;
     align-items:center;
+    justify-content:center;
     gap:9px;
     margin-bottom:26px;
   }
@@ -102,7 +116,11 @@
     line-height:1.35;
     color:var(--ink);
   }
-  .hello .name{ color:#5F534C; }
+  /* 姓名為動態內容（LIFF 帶入），改用系統字型避免瘦身字型缺字 */
+  .hello .name{
+    color:#5F534C;
+    font-family:var(--font-system);
+  }
   .hello .wave{
     display:inline-block;
     font-size:24px;
@@ -116,14 +134,16 @@
 
   .divider{
     height:1px;
-    background:linear-gradient(90deg, var(--rose-soft), rgba(240,224,224,0));
-    margin:26px 0 20px;
+    background:linear-gradient(90deg, rgba(240,224,224,0), var(--rose-soft) 50%, rgba(240,224,224,0));
+    margin:26px auto 20px;
+    width:100%;
     border:0;
   }
 
   .section-label{
     display:flex;
     align-items:center;
+    justify-content:center;
     gap:7px;
     font-size:12.5px;
     font-weight:700;
@@ -152,6 +172,7 @@
     font:inherit;
     color:inherit;
     text-align:left;
+    font-family:var(--font-display);
     text-decoration:none;
     width:100%;
     cursor:pointer;
@@ -262,10 +283,9 @@
 
   /* ---------- 平板以上：兩欄 ---------- */
   @media (min-width:640px){
-    .wrap{ max-width:760px; padding-top:54px; }
-    .hello{ font-size:31px; }
-    .cards{ grid-template-columns:1fr 1fr; gap:16px; }
-    .card{ padding:22px 20px; min-height:96px; }
+    .wrap{ padding-top:54px; }
+    .hello{ font-size:30px; }
+    .card{ padding:22px 20px; min-height:94px; }
   }
 
   @media (prefers-reduced-motion:reduce){
