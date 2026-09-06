@@ -506,7 +506,10 @@
   var LIFF_ID    = "2011467420-8ej4byB6";
   var ROSTER_URL = "https://script.google.com/macros/s/AKfycbzitK29DxZdY8GKoWudHUXA8RBFHQBLQ7DUWuJeulM-zLkl7iMRvFYROThJgLVa9oDy/exec?action=getRoster";
 
-  // 各部門可見的功能（共通功能另外加）
+  // 管理員：看得到所有功能（不列舉，之後新增卡片會自動包含）
+  var ADMIN_DEPT = "管理員";
+
+  // 各部門可見的功能（共通功能另外加；管理員另外處理）
   var DEPT_FUNCTIONS = {
     "行政": ["請假申請"],
     "思庭": ["預休登記", "請假申請", "月中介紹"],
@@ -572,10 +575,14 @@
 
   // 依部門開啟對應卡片
   function renderCards(dept, userId){
-    var allow = (DEPT_FUNCTIONS[dept] || []).concat(COMMON_FUNCTIONS);
+    // 管理員 → allow 為 null，代表全部顯示
+    var allow = (dept === ADMIN_DEPT)
+      ? null
+      : (DEPT_FUNCTIONS[dept] || []).concat(COMMON_FUNCTIONS);
+
     var shown = [];
     allCards.forEach(function(c){
-      var on = allow.indexOf(c.getAttribute("data-fn")) !== -1;
+      var on = (allow === null) || allow.indexOf(c.getAttribute("data-fn")) !== -1;
       c.hidden = !on;
       c.classList.remove("is-wide");
       if (on) shown.push(c);
