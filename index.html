@@ -427,6 +427,12 @@
     elStatus.textContent = status;
   }
 
+  // 記錄「已嘗試過登入跳轉」，避免登入失敗時來回無限跳轉
+  var LOGIN_FLAG = "liff_login_redirected";
+  function getFlag(k){   try { return sessionStorage.getItem(k); } catch(e){ return null; } }
+  function setFlag(k){   try { sessionStorage.setItem(k, "1"); } catch(e){} }
+  function clearFlag(k){ try { sessionStorage.removeItem(k); }  catch(e){} }
+
   // SDK 沒載到（擋廣告的外掛、離線等）
   if (typeof liff === "undefined") {
     elName.textContent = "訪客";
@@ -441,12 +447,24 @@
         "　OS:" + liff.getOS() +
         "　v" + liff.getVersion();
 
-      // 未登入（多半是在電腦瀏覽器直接開）→ 不強制導向登入，只提示
+      // 未登入（外部瀏覽器開啟）→ 導向 LINE 登入，登入後自動回到本頁
       if (!liff.isLoggedIn()) {
+        // 防呆：若登入後回來仍是未登入狀態，就停下來，避免無限跳轉
+        if (getFlag(LOGIN_FLAG)) {
+          clearFlag(LOGIN_FLAG);
+          elName.textContent = "訪客";
+          setState("is-error",
+            "已完成 LINE 登入但仍取不到身分，請確認瀏覽器允許 Cookie，或改用 LINE 開啟");
+          return;
+        }
+        setFlag(LOGIN_FLAG);
         elName.textContent = "訪客";
-        setState("is-warn", "尚未登入 LINE，請從 LINE 開啟這個頁面");
+        setState("is-warn", "尚未登入，導向 LINE 登入中…");
+        liff.login();   // 跳轉離開本頁，之後的程式不會執行
         return;
       }
+
+      clearFlag(LOGIN_FLAG);
 
       return liff.getProfile()
         .then(function(profile){
