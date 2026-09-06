@@ -162,7 +162,7 @@
   /* ---------- 功能卡片 ---------- */
   .cards{
     display:grid;
-    grid-template-columns:1fr;
+    grid-template-columns:1fr 1fr;
     gap:13px;
   }
 
@@ -171,17 +171,19 @@
     appearance:none;
     font:inherit;
     color:inherit;
-    text-align:left;
+    text-align:center;
     font-family:var(--font-display);
     text-decoration:none;
     width:100%;
     cursor:pointer;
 
     display:flex;
+    flex-direction:column;
     align-items:center;
-    gap:16px;
-    padding:20px 18px;
-    min-height:88px;
+    justify-content:center;
+    gap:13px;
+    padding:26px 12px 24px;
+    min-height:150px;
 
     background:var(--surface);
     border:1px solid var(--line);
@@ -195,8 +197,8 @@
 
   .card .icon{
     flex:0 0 auto;
-    width:52px; height:52px;
-    border-radius:16px;
+    width:66px; height:66px;
+    border-radius:21px;
     background:var(--c-wash);
     border:1px solid var(--c-soft);
     display:grid; place-items:center;
@@ -204,34 +206,18 @@
     transition:background-color .18s ease, color .18s ease, border-color .18s ease;
   }
   .card .icon svg{
-    width:25px; height:25px;
+    width:33px; height:33px;
     display:block;
   }
 
-  .card .text{ min-width:0; }
   .card .title{
     display:block;
-    font-size:17.5px;
+    font-size:17px;
     font-weight:700;
-    letter-spacing:.02em;
+    letter-spacing:.04em;
     color:var(--ink);
-    margin-bottom:2px;
+    line-height:1.3;
   }
-  .card .desc{
-    display:block;
-    font-size:13px;
-    color:var(--ink-soft);
-    letter-spacing:.01em;
-  }
-
-  .card .chev{
-    margin-left:auto;
-    flex:0 0 auto;
-    color:var(--ink-faint);
-    display:grid; place-items:center;
-    transition:transform .18s ease, color .18s ease;
-  }
-  .card .chev svg{ width:18px; height:18px; display:block; }
 
   @media (hover:hover){
     .card:hover{
@@ -246,10 +232,6 @@
       color:#fff;
     }
     .card:hover .title{ color:var(--c-deep); }
-    .card:hover .chev{
-      transform:translateX(3px);
-      color:var(--c);
-    }
   }
 
   .card:active{
@@ -285,11 +267,15 @@
   @media (min-width:640px){
     .wrap{ padding-top:54px; }
     .hello{ font-size:30px; }
-    .card{ padding:22px 20px; min-height:94px; }
+    .cards{ gap:16px; }
+    .card{ padding:32px 16px 30px; min-height:172px; gap:15px; }
+    .card .icon{ width:72px; height:72px; border-radius:23px; }
+    .card .icon svg{ width:36px; height:36px; }
+    .card .title{ font-size:18px; }
   }
 
   @media (prefers-reduced-motion:reduce){
-    .card,.card .icon,.card .chev{ transition:none; }
+    .card,.card .icon{ transition:none; }
     .card:hover,.card:active{ transform:none; }
   }
 </style>
@@ -332,14 +318,7 @@
           <path d="M8 14.5h.01M12 14.5h.01M16 14.5h.01M8 18h.01M12 18h.01"/>
         </svg>
       </span>
-      <span class="text">
-        <span class="title">預休登記</span>
-        <span class="desc">登記下個月的預定休假</span>
-      </span>
-      <span class="chev" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-             stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
-      </span>
+      <span class="title">預休登記</span>
     </button>
 
     <button type="button" class="card">
@@ -352,14 +331,7 @@
           <path d="M8.6 15.2l2 2 4-4.4"/>
         </svg>
       </span>
-      <span class="text">
-        <span class="title">請假申請</span>
-        <span class="desc">特休、病假、事假線上送出</span>
-      </span>
-      <span class="chev" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-             stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
-      </span>
+      <span class="title">請假申請</span>
     </button>
 
     <!-- 資訊類：藕粉 -->
@@ -372,14 +344,7 @@
           <path d="M3 11h18"/>
         </svg>
       </span>
-      <span class="text">
-        <span class="title">開會內容</span>
-        <span class="desc">歷次會議紀錄與重點</span>
-      </span>
-      <span class="chev" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-             stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
-      </span>
+      <span class="title">開會內容</span>
     </button>
 
     <button type="button" class="card is-rose">
@@ -392,14 +357,7 @@
           <path d="M12 16.6v-3.1M12 11.1h.01"/>
         </svg>
       </span>
-      <span class="text">
-        <span class="title">月中介紹</span>
-        <span class="desc">合作月子中心資訊查詢</span>
-      </span>
-      <span class="chev" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-             stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
-      </span>
+      <span class="title">月中介紹</span>
     </button>
 
   </div>
