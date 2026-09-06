@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FBFAF8">
 <title>晴暢集團 員工系統</title>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
   /* ---------- 金萱字型（同目錄 woff2 瘦身檔） ---------- */
   @font-face{
@@ -254,6 +255,41 @@
     --c-wash: var(--rose-wash);
   }
 
+  /* ---------- LIFF 除錯面板（測試用，之後移除） ---------- */
+  .debug{
+    margin-top:26px;
+    padding:14px 16px;
+    border-radius:16px;
+    border:1px dashed var(--line);
+    background:var(--surface);
+    text-align:left;
+    font-size:12.5px;
+    line-height:1.75;
+    color:var(--ink-soft);
+    word-break:break-all;
+  }
+  .debug h2{
+    margin:0 0 8px;
+    font-size:11.5px;
+    font-weight:700;
+    letter-spacing:.14em;
+    color:var(--ink-faint);
+  }
+  .debug .row{ display:flex; gap:8px; }
+  .debug .k{
+    flex:0 0 auto;
+    min-width:76px;
+    color:var(--ink-faint);
+  }
+  .debug .v{
+    font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size:12px;
+    color:var(--ink);
+  }
+  .debug.is-ok{    border-color:var(--blue-soft); background:var(--blue-wash); }
+  .debug.is-warn{  border-color:var(--rose-soft); background:var(--rose-wash); }
+  .debug.is-error{ border-color:#E8B4B4; background:#FDF0F0; }
+
   /* ---------- 頁尾 ---------- */
   .foot{
     margin-top:34px;
@@ -297,7 +333,7 @@
   </div>
 
   <!-- 頂部：問候 -->
-  <h1 class="hello">哈囉 <span class="name" id="userName">王小美</span><span class="wave">👋</span></h1>
+  <h1 class="hello">哈囉 <span class="name" id="userName">載入中…</span><span class="wave">👋</span></h1>
   <p class="subtitle">今天也辛苦了，需要什麼從下面選就好</p>
 
   <hr class="divider">
@@ -362,9 +398,75 @@
 
   </div>
 
+  <!-- LIFF 測試面板：確認身分有沒有抓到，確認完可整段刪除 -->
+  <section class="debug" id="debugBox">
+    <h2>LIFF 連線測試</h2>
+    <div class="row"><span class="k">狀態</span><span class="v" id="dbgStatus">初始化中…</span></div>
+    <div class="row"><span class="k">暱稱</span><span class="v" id="dbgName">—</span></div>
+    <div class="row"><span class="k">userId</span><span class="v" id="dbgUid">—</span></div>
+    <div class="row"><span class="k">開啟環境</span><span class="v" id="dbgEnv">—</span></div>
+  </section>
+
   <p class="foot">晴暢國際有限公司　內部使用</p>
 
 </main>
+
+<script>
+(function(){
+  var LIFF_ID = "2011467420-8ej4byB6";
+
+  var elName   = document.getElementById("userName");
+  var elBox    = document.getElementById("debugBox");
+  var elStatus = document.getElementById("dbgStatus");
+  var elDbgName= document.getElementById("dbgName");
+  var elUid    = document.getElementById("dbgUid");
+  var elEnv    = document.getElementById("dbgEnv");
+
+  function setState(cls, status){
+    elBox.className = "debug " + cls;
+    elStatus.textContent = status;
+  }
+
+  // SDK 沒載到（擋廣告的外掛、離線等）
+  if (typeof liff === "undefined") {
+    elName.textContent = "訪客";
+    setState("is-error", "LIFF SDK 載入失敗，請檢查網路連線");
+    return;
+  }
+
+  liff.init({ liffId: LIFF_ID })
+    .then(function(){
+      elEnv.textContent =
+        (liff.isInClient() ? "LINE App 內" : "一般瀏覽器") +
+        "　OS:" + liff.getOS() +
+        "　v" + liff.getVersion();
+
+      // 未登入（多半是在電腦瀏覽器直接開）→ 不強制導向登入，只提示
+      if (!liff.isLoggedIn()) {
+        elName.textContent = "訪客";
+        setState("is-warn", "尚未登入 LINE，請從 LINE 開啟這個頁面");
+        return;
+      }
+
+      return liff.getProfile()
+        .then(function(profile){
+          elName.textContent    = profile.displayName;
+          elDbgName.textContent = profile.displayName;
+          elUid.textContent     = profile.userId;
+          setState("is-ok", "成功抓到身分 ✓");
+        })
+        .catch(function(err){
+          elName.textContent = "訪客";
+          setState("is-error", "getProfile 失敗：" + (err && (err.message || err.code) || err));
+        });
+    })
+    .catch(function(err){
+      elName.textContent = "訪客";
+      elEnv.textContent  = "—";
+      setState("is-error", "liff.init 失敗：" + (err && (err.message || err.code) || err));
+    });
+})();
+</script>
 
 </body>
 </html>
