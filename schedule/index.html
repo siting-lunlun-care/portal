@@ -1103,6 +1103,127 @@
     line-height: 1.6;
     white-space: pre-line;
   }
+
+  /* ============ 手機閱讀：長字自動換行，不擠成一長條、不超出邊界 ============ */
+  body{
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .pill, .rr-badge{
+    white-space: normal;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+    line-height: 1.35;
+  }
+  .brush-status, .proxy-note, .meta, .footnote, .send-hint, .legend-note,
+  .ov-alert, .result-row-note, #resultSummary, .toast{
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .result-row-top{ flex-wrap: wrap; }
+  .ov-row{ flex-wrap: wrap; }
+  /* 月曆格子太小，裡面的字不要被拆開 */
+  .day-cell .cell-text{ word-break: keep-all; overflow-wrap: normal; }
+
+  /* ============ 館別／房間選擇 ============ */
+  .brush-pick{
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .brush-pick .lbl{
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    min-width: 34px;
+  }
+  .brush-pick .loc-chip{ padding: 7px 14px; font-size: 13px; }
+  .room-chip{
+    border: none;
+    min-width: 40px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--chip);
+    color: var(--ink-soft);
+    font-weight: 700;
+    font-size: 15px;
+  }
+  .room-chip.selected{ background: var(--accent-dark); color: #fff; }
+  .brush-pick .need{
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--warn);
+  }
+
+  /* ============ 格子上的小叉叉：直接清掉那天 ============ */
+  .day-cell{ overflow: visible; }
+  .day-cell .delete-x{
+    position: absolute;
+    top: -6px;
+    right: -5px;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    border-radius: 50%;
+    background: var(--err);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    z-index: 3;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  }
+  .day-cell .delete-x:active{ background: #A8393C; }
+  /* 叉叉佔右上角，晚班月亮移到左下 */
+  .day-cell .night-dot{ top: auto; right: auto; bottom: 2px; left: 3px; }
+
+  /* ============ 本月已排：按館別分組 ============ */
+  .hall-block{
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 10px 12px 4px;
+    margin-bottom: 12px;
+  }
+  .hall-block:last-child{ margin-bottom: 0; }
+  .hall-title{
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent-dark);
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--accent-soft);
+  }
+  .hall-title .n{
+    font-size: 11px;
+    color: var(--ink-soft);
+    flex-shrink: 0;
+  }
+  .sum-row{ flex-wrap: wrap; }
+  .sum-row .pill{ max-width: 48%; }
+  .sum-dates .dt .room{
+    font-size: 11px;
+    color: var(--accent-dark);
+    font-weight: 700;
+  }
+  .sum-dates .lv{ white-space: nowrap; }
+  .sum-dates .lv-name{ font-size: 12px; color: var(--t-特休); margin-right: 2px; }
+  .ov-row .rm{
+    display: inline-block;
+    min-width: 22px;
+    text-align: center;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    font-size: 12px;
+  }
 </style>
 </head>
 <body>
@@ -1159,7 +1280,8 @@
     <p class="brush-title"><span class="step">1</span>先選要刷的項目　<span class="step">2</span>再點日期</p>
     <div class="brush-grid" id="brushGrid"></div>
     <button type="button" class="leave-entry" id="leaveEntryBtn">📝 請假<span class="small">（特休、事假、病假…：點日期再選假別）</span></button>
-    <div class="brush-loc" id="brushLocRow" style="display:none;"></div>
+    <div class="brush-pick" id="brushLocRow"></div>
+    <div class="brush-pick" id="brushRoomRow" style="display:none;"></div>
     <div class="brush-status idle" id="brushStatus">還沒選項目：先點上面的班別、休假或請假</div>
 
     <hr class="brush-divider">
@@ -1194,7 +1316,7 @@
       <div class="summary-pill">休假／請假<span class="n" id="cntLeave">0</span></div>
     </div>
 
-    <p class="footnote">刷到已排的日期會覆蓋；同一天用同一個項目再點一次＝取消。<br>排完記得按下方「儲存」。</p>
+    <p class="footnote">格子上顯示「館別＋房號」，顏色是班別。<br>點格子右上角 ✕ 可直接清掉那天；刷到已排的日期會覆蓋。<br>排完記得按下方「儲存」。</p>
   </div>
 
   <!-- 本月已排（依項目統整）＋送請假 -->
@@ -1358,6 +1480,27 @@
   // 館別總覽：固定館別清單＋各館倫倫房間數
   var LOCATIONS = ["板新", "板橋", "東門", "復興", "桃園", "新竹", "台中"];
   var ROOMS = { "板新": 1, "板橋": 2, "東門": 5, "復興": 5, "桃園": 2, "新竹": 2, "台中": 4 };
+  // 各館房間代號（排上班時選館別後，只出現該館的房間）
+  var ROOM_CODES = {
+    "板新": ["A"],
+    "板橋": ["A", "C"],
+    "東門": ["A", "B", "C", "D", "E"],
+    "復興": ["A", "C", "D", "E", "F"],
+    "桃園": ["A", "C"],
+    "新竹": ["A", "B"],
+    "台中": ["A", "B", "C", "E"]
+  };
+
+  // 房間跟館別一起存進 location（例如「復興C」），讀回來再拆開；
+  // 舊資料只有館別（例如「板新」）→ 房間空白。
+  function parseLoc(str){
+    str = String(str || "").trim();
+    for (var i = 0; i < LOCATIONS.length; i++){
+      if (str.indexOf(LOCATIONS[i]) === 0) return { hall: LOCATIONS[i], room: str.slice(LOCATIONS[i].length).trim() };
+    }
+    return { hall: str, room: "" };
+  }
+  function joinLoc(hall, room){ return (hall || "") + (room || ""); }
 
   // 非上班項目：「休假」（例假）在刷班項目裡；其他是「請假類」，點日期再選，要送請假系統
   var LEAVE_TYPES = ["休假", "特休", "事假", "病假", "喪假", "婚假", "產假", "產檢假", "育嬰假"];
@@ -1498,7 +1641,8 @@
     pending: {},         // 還沒儲存的變更：{ "YYYY-MM-DD": {content, location} 或 null(要刪) }
     loadedMonth: null,
     brush: null,         // 目前刷的項目：班別名稱／"休假"／LEAVE_BRUSH／null
-    brushLoc: null,      // 刷上班時排到哪個館
+    brushHall: null,     // 目前排到哪個館（上班、休假、請假都記館別）
+    roomByHall: {},      // 每個館上次選的房間：{ "復興": "C" }
     saving: false,
     leaveDate: null,     // 請假選單目前開的日期
     ovLoc: null,
@@ -1516,7 +1660,7 @@
     adminPick: $("adminPick"), empSelect: $("empSelect"), proxyNote: $("proxyNote"),
     loadError: $("loadError"), loadErrorMsg: $("loadErrorMsg"),
     brushGrid: $("brushGrid"), leaveEntryBtn: $("leaveEntryBtn"),
-    brushLocRow: $("brushLocRow"), brushStatus: $("brushStatus"),
+    brushLocRow: $("brushLocRow"), brushRoomRow: $("brushRoomRow"), brushStatus: $("brushStatus"),
     monthLabel: $("monthLabel"), lockHint: $("lockHint"), calLoading: $("calLoading"),
     grid: $("calendarGrid"),
     cntWork: $("cntWork"), cntNight: $("cntNight"), cntLeave: $("cntLeave"),
@@ -1653,7 +1797,8 @@
     state.me = person;
     state.groups = groupsFor(person.shift, person.shiftType);
     state.brush = null;
-    state.brushLoc = person.areas[0] || null;
+    state.brushHall = person.areas[0] || null;
+    state.roomByHall = {};
     state.pending = {};
     renderMe();
     renderBrush();
@@ -1752,7 +1897,12 @@
           if (!content) return;
           data[date] = {
             content: content,
-            location: String(pick(row, ["location", "Location", "館別", "館"]) || "").trim(),
+            location: (function(){
+              var loc = String(pick(row, ["location", "Location", "館別", "館"]) || "").trim();
+              var room = String(pick(row, ["room", "Room", "房間"]) || "").trim();
+              var pl = parseLoc(loc);
+              return joinLoc(pl.hall, pl.room || room);
+            })(),
             status: String(pick(row, ["status", "Status", "狀態"]) || "").trim()
           };
         });
@@ -1889,46 +2039,91 @@
     el.leaveEntryBtn.classList.toggle("active", state.brush === LEAVE_BRUSH);
     el.leaveEntryBtn.setAttribute("aria-pressed", state.brush === LEAVE_BRUSH ? "true" : "false");
 
-    // 多館才需要選「排到哪個館」；只有一個館自動帶
     var areas = state.me.areas;
-    var isWorkBrush = state.brush && state.brush !== "休假" && state.brush !== LEAVE_BRUSH;
-    if (areas.length > 1){
-      el.brushLocRow.style.display = "flex";
-      el.brushLocRow.innerHTML = '<span class="lbl">上班排到</span>';
+    var isWorkBrush = !!state.brush && state.brush !== "休假" && state.brush !== LEAVE_BRUSH;
+
+    // 館別：這個員工 area 可去的館（上班、休假、請假都記在這個館底下）
+    el.brushLocRow.innerHTML = "";
+    if (areas.length){
+      var lbl = document.createElement("span");
+      lbl.className = "lbl";
+      lbl.textContent = "館別";
+      el.brushLocRow.appendChild(lbl);
       areas.forEach(function(a){
         var chip = document.createElement("button");
         chip.type = "button";
-        chip.className = "loc-chip" + (state.brushLoc === a ? " selected" : "");
+        chip.className = "loc-chip" + (state.brushHall === a ? " selected" : "");
         chip.textContent = a;
         chip.addEventListener("click", function(){
-          state.brushLoc = a;
+          state.brushHall = a;
           renderBrush();
         });
         el.brushLocRow.appendChild(chip);
       });
+      el.brushLocRow.style.display = "flex";
     } else {
       el.brushLocRow.style.display = "none";
     }
 
-    // 狀態列：清楚寫出「現在刷的是什麼」
+    // 房間：只有排上班時要選，而且只列「這個館」的房間；只有一間就自動帶
+    var rooms = ROOM_CODES[state.brushHall] || [];
+    if (rooms.length === 1) state.roomByHall[state.brushHall] = rooms[0];
+    var room = state.roomByHall[state.brushHall] || "";
+    el.brushRoomRow.innerHTML = "";
+    if (isWorkBrush && rooms.length){
+      var rl = document.createElement("span");
+      rl.className = "lbl";
+      rl.textContent = "房間";
+      el.brushRoomRow.appendChild(rl);
+      rooms.forEach(function(r){
+        var chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "room-chip" + (room === r ? " selected" : "");
+        chip.textContent = r;
+        chip.addEventListener("click", function(){
+          state.roomByHall[state.brushHall] = r;
+          renderBrush();
+        });
+        el.brushRoomRow.appendChild(chip);
+      });
+      if (!room){
+        var need = document.createElement("span");
+        need.className = "need";
+        need.textContent = "← 請選房間";
+        el.brushRoomRow.appendChild(need);
+      }
+      el.brushRoomRow.style.display = "flex";
+    } else {
+      el.brushRoomRow.style.display = "none";
+    }
+
+    // 狀態列：清楚寫出「現在刷的是什麼、排到哪」
     var st = el.brushStatus;
+    var hallTxt = state.brushHall || "名單未填館別";
     if (!state.brush){
       st.className = "brush-status idle";
       st.textContent = "還沒選項目：先點上面的班別、休假或請假";
     } else if (state.brush === LEAVE_BRUSH){
       st.className = "brush-status";
-      st.textContent = "選取中：📝 請假 → 點日期，再選假別";
+      st.textContent = "選取中：📝 請假・" + hallTxt + " → 點日期，再選假別";
     } else if (state.brush === "休假"){
       st.className = "brush-status";
-      st.textContent = "選取中：休假 → 點日期就排上；同一天再點一次取消";
+      st.textContent = "選取中：休假・" + hallTxt + " → 點日期就排上";
     } else {
       st.className = "brush-status";
-      var locTxt = areas.length ? "（" + (state.brushLoc || areas[0]) + "）" : "（名單未填館別）";
-      st.textContent = "選取中：" + state.brush + locTxt + " → 點日期就排上；同一天再點一次取消";
+      var where = state.brushHall ? joinLoc(state.brushHall, room) : "名單未填館別";
+      st.textContent = "選取中：" + state.brush + "・" + where +
+        (rooms.length && !room ? "（還沒選房間）" : "") + " → 點日期就排上";
     }
-    if (isWorkBrush && !areas.length){
-      st.textContent += "｜館別會存空白，請找管理員補名單";
-    }
+  }
+
+  // 刷上班時目前要存的 location（館別＋房號）；還沒選房間回傳 null
+  function currentWorkLocation(){
+    var hall = state.brushHall || "";
+    var rooms = ROOM_CODES[hall] || [];
+    var room = state.roomByHall[hall] || "";
+    if (rooms.length && !room) return null;
+    return joinLoc(hall, room);
   }
 
   // ============================================================
@@ -1950,15 +2145,20 @@
       openLeaveSheet(dateStr);
       return;
     }
-    var loc = isLeave(state.brush) ? "" : (state.brushLoc || "");
+    var loc;
+    if (isLeave(state.brush)){
+      loc = state.brushHall || "";
+    } else {
+      loc = currentWorkLocation();
+      if (loc === null){ showToast("先在上面選房間，再點日期", true); return; }
+    }
     setDay(dateStr, { content: state.brush, location: loc });
   }
 
-  // 把某天設成 val（null = 清空）。同一天已經是同一個項目（同館）→ 取消。
+  // 把某天設成 val（null = 清空）。同一天已經是同一個項目（同館同房）→ 取消。
   function setDay(dateStr, val){
     var cur = view(dateStr);
-    if (val && cur && cur.content === val.content &&
-        (isLeave(val.content) || (cur.location || "") === (val.location || ""))){
+    if (val && cur && cur.content === val.content && (cur.location || "") === (val.location || "")){
       val = null;
     }
     commitDay(dateStr, val);
@@ -1991,7 +2191,7 @@
       btn.style.color = c.fg;
       btn.textContent = t;
       btn.addEventListener("click", function(){
-        setDay(dateStr, { content: t, location: "" });
+        setDay(dateStr, { content: t, location: state.brushHall || "" });
         closeLeaveSheet();
       });
       el.leaveGrid.appendChild(btn);
@@ -2074,13 +2274,30 @@
 
           var txt = document.createElement("span");
           txt.className = "cell-text";
-          var meta = findShiftMeta(entry.content);
-          if (meta){
-            txt.innerHTML = meta.short + '<span class="t2">' + meta.when + "</span>";
-          } else {
+          // 上班：文字＝館別＋房號（例如「復興C」），班別看顏色；假別直接寫假別
+          if (isLeave(entry.content)){
             txt.textContent = entry.content;
+          } else {
+            txt.textContent = entry.location || entry.content;
           }
           cell.appendChild(txt);
+
+          // 可以動的日期才有小叉叉：點了直接清掉那天（一樣要按儲存才會寫進後端）
+          if (!blockReason(cellIso)){
+            var x = document.createElement("span");
+            x.className = "delete-x";
+            x.textContent = "✕";
+            x.setAttribute("role", "button");
+            x.setAttribute("aria-label", "清掉這天");
+            x.addEventListener("click", (function(dateStr){
+              return function(e){
+                e.stopPropagation();
+                if (state.saving){ showToast("儲存中，請稍等"); return; }
+                commitDay(dateStr, null);
+              };
+            })(cellIso));
+            cell.appendChild(x);
+          }
 
           if (isNightShift(entry.content)){
             var dot = document.createElement("span");
@@ -2117,86 +2334,141 @@
     el.cntLeave.textContent = leave;
   }
 
-  // 本月已排：依項目統整（班別依目錄順序 → 其他班別 → 休假 → 請假類）
+  // 本月已排：先分館別，每館底下列 時段（班別）→ 休假 → 請假
   function renderSummary(){
-    var byContent = {};
+    var me = state.me;
+    var halls = {}; // hall -> { work: {content: [d]}, off: [d], leave: [d] }
     monthDates().forEach(function(d){
       var e = view(d);
       if (!e) return;
-      (byContent[e.content] = byContent[e.content] || []).push(d);
+      var hall = parseLoc(e.location).hall;
+      if (!hall) hall = (me && me.areas.length === 1) ? me.areas[0] : "未指定館別";
+      var h = halls[hall] = halls[hall] || { work: {}, off: [], leave: [], total: 0 };
+      h.total++;
+      if (e.content === "休假") h.off.push(d);
+      else if (isLeave(e.content)) h.leave.push(d);
+      else (h.work[e.content] = h.work[e.content] || []).push(d);
     });
-
-    var order = [];
-    ["明10", "暗10", "暗8"].forEach(function(k){
-      SHIFT_GROUPS[k].items.forEach(function(it){ order.push(it.name); });
-    });
-    var workKeys = order.filter(function(c){ return byContent[c]; });
-    Object.keys(byContent).forEach(function(c){
-      if (!isLeave(c) && workKeys.indexOf(c) === -1) workKeys.push(c);
-    });
-    var leaveKeys = LEAVE_TYPES.filter(function(c){ return byContent[c]; });
 
     el.sumList.innerHTML = "";
-    if (!workKeys.length && !leaveKeys.length){
+    var hallKeys = Object.keys(halls);
+    if (!hallKeys.length){
       el.sumList.innerHTML = '<div class="empty-hint">這個月還沒有排班</div>';
       return;
     }
-    var multiArea = state.me && state.me.areas.length > 1;
+    // 館別順序：員工自己的館別順序 → 其他
+    var order = (me ? me.areas : []).filter(function(a){ return halls[a]; });
+    hallKeys.forEach(function(k){ if (order.indexOf(k) === -1) order.push(k); });
 
-    function section(title, keys){
-      if (!keys.length) return;
-      var h = document.createElement("div");
-      h.className = "sum-sec";
-      h.textContent = title;
-      el.sumList.appendChild(h);
+    var shiftOrder = [];
+    ["明10", "暗10", "暗8"].forEach(function(k){
+      SHIFT_GROUPS[k].items.forEach(function(it){ shiftOrder.push(it.name); });
+    });
 
-      keys.forEach(function(content){
-        var dates = byContent[content];
-        var row = document.createElement("div");
-        row.className = "sum-row";
+    function dateSpan(d, withRoom){
+      var e = view(d), saved = state.data[d];
+      var span = document.createElement("span");
+      span.className = "dt" + (isPending(d) ? " pend" : "");
+      span.textContent = shortDate(d);
+      if (withRoom){
+        var room = parseLoc(e.location).room;
+        if (room){
+          var r = document.createElement("span");
+          r.className = "room";
+          r.textContent = "(" + room + ")";
+          span.appendChild(r);
+        }
+      }
+      if (!isPending(d) && saved && isSentStatus(saved.status)){
+        var s = document.createElement("span");
+        s.className = "sent";
+        s.textContent = " 已送";
+        span.appendChild(s);
+      }
+      return span;
+    }
 
-        var c = colorFor(content);
-        var pill = document.createElement("span");
-        pill.className = "pill";
-        pill.style.background = c.bg;
-        pill.style.color = c.fg;
-        pill.textContent = content + (isNightShift(content) ? " 🌙" : "");
-        row.appendChild(pill);
+    function addRow(box, label, color, night, fillDates, count){
+      var row = document.createElement("div");
+      row.className = "sum-row";
+      var pill = document.createElement("span");
+      pill.className = "pill";
+      pill.style.background = color.bg;
+      pill.style.color = color.fg;
+      pill.textContent = label + (night ? " 🌙" : "");
+      row.appendChild(pill);
+      var ds = document.createElement("div");
+      ds.className = "sum-dates";
+      fillDates(ds);
+      row.appendChild(ds);
+      var cnt = document.createElement("span");
+      cnt.className = "cnt";
+      cnt.textContent = count + " 天";
+      row.appendChild(cnt);
+      box.appendChild(row);
+    }
 
-        var ds = document.createElement("div");
-        ds.className = "sum-dates";
-        dates.forEach(function(d, idx){
-          var e = view(d), saved = state.data[d];
-          var span = document.createElement("span");
-          span.className = "dt" + (isPending(d) ? " pend" : "");
-          span.textContent = shortDate(d);
-          if (multiArea && !isLeave(content) && e.location){
-            var l = document.createElement("span");
-            l.className = "loc";
-            l.textContent = "(" + e.location + ")";
-            span.appendChild(l);
-          }
-          if (!isPending(d) && saved && isSentStatus(saved.status)){
-            var s = document.createElement("span");
-            s.className = "sent";
-            s.textContent = " 已送";
-            span.appendChild(s);
-          }
-          ds.appendChild(span);
-          if (idx < dates.length - 1) ds.appendChild(document.createTextNode("、"));
-        });
-        row.appendChild(ds);
-
-        var cnt = document.createElement("span");
-        cnt.className = "cnt";
-        cnt.textContent = dates.length + " 天";
-        row.appendChild(cnt);
-
-        el.sumList.appendChild(row);
+    function joinSpans(ds, spans){
+      spans.forEach(function(sp, i){
+        ds.appendChild(sp);
+        if (i < spans.length - 1) ds.appendChild(document.createTextNode("、"));
       });
     }
-    section("上班", workKeys);
-    section("休假／請假", leaveKeys);
+
+    order.forEach(function(hall){
+      var h = halls[hall];
+      var box = document.createElement("div");
+      box.className = "hall-block";
+
+      var title = document.createElement("div");
+      title.className = "hall-title";
+      var tname = document.createElement("span");
+      tname.textContent = hall === "未指定館別" ? hall : hall + "館";
+      title.appendChild(tname);
+      var tn = document.createElement("span");
+      tn.className = "n";
+      tn.textContent = "共 " + h.total + " 天";
+      title.appendChild(tn);
+      box.appendChild(title);
+
+      // 時段（班別）
+      var keys = shiftOrder.filter(function(c){ return h.work[c]; });
+      Object.keys(h.work).forEach(function(c){ if (keys.indexOf(c) === -1) keys.push(c); });
+      keys.forEach(function(c){
+        addRow(box, c, colorFor(c), isNightShift(c), function(ds){
+          joinSpans(ds, h.work[c].map(function(d){ return dateSpan(d, true); }));
+        }, h.work[c].length);
+      });
+
+      // 休假
+      if (h.off.length){
+        addRow(box, "休假", colorFor("休假"), false, function(ds){
+          joinSpans(ds, h.off.map(function(d){ return dateSpan(d, false); }));
+        }, h.off.length);
+      }
+
+      // 請假：同一種假別放一起，例如「特休 9/3、9/5；病假 9/22」
+      if (h.leave.length){
+        var byType = {};
+        h.leave.forEach(function(d){ var t = view(d).content; (byType[t] = byType[t] || []).push(d); });
+        addRow(box, "請假", colorFor("特休"), false, function(ds){
+          var types = REQUEST_TYPES.filter(function(t){ return byType[t]; });
+          types.forEach(function(t, i){
+            var grp = document.createElement("span");
+            grp.className = "lv";
+            var nm = document.createElement("span");
+            nm.className = "lv-name";
+            nm.textContent = t;
+            grp.appendChild(nm);
+            ds.appendChild(grp);
+            joinSpans(ds, byType[t].map(function(d){ return dateSpan(d, false); }));
+            if (i < types.length - 1) ds.appendChild(document.createTextNode("；"));
+          });
+        }, h.leave.length);
+      }
+
+      el.sumList.appendChild(box);
+    });
   }
 
   var discardArmed = false, discardTimer = null;
@@ -2261,7 +2533,8 @@
           action: "saveSchedule",
           name: target.name,
           userId: target.userId,
-          location: isLeave(val.content) ? "" : (val.location || ""),
+          location: val.location || "",
+          room: parseLoc(val.location).room, // 另外帶房間欄位（後端有這欄就會記；沒有也不影響）
           date: d,
           content: val.content,
           isNight: isNightShift(val.content) ? "是" : "否",
@@ -2270,7 +2543,7 @@
           status: status
         }).then(function(r){
           if (!isBackendSuccess(r)) throw r;
-          state.data[d] = { content: val.content, location: isLeave(val.content) ? "" : (val.location || ""), status: status };
+          state.data[d] = { content: val.content, location: val.location || "", status: status };
         });
       } else if (state.data[d]){
         req = postJSON(SCHEDULE_GAS_URL, {
@@ -2395,7 +2668,7 @@
 
   function openReviewForDates(dates){
     pendingRows = dates.map(function(dateStr){
-      return { dateStr: dateStr, type: state.data[dateStr].content, photoBase64: "", photoName: "" };
+      return { dateStr: dateStr, type: state.data[dateStr].content, location: state.data[dateStr].location || "", photoBase64: "", photoName: "" };
     });
     el.reasonInput.value = "";
     el.reviewSub.textContent = "共 " + pendingRows.length + " 筆，請確認假別";
@@ -2546,7 +2819,7 @@
       action: "saveSchedule",
       name: person.name,
       userId: person.userId,
-      location: "",
+      location: row.location || "",
       date: row.dateStr,
       content: row.type,
       isNight: "否",
@@ -2637,7 +2910,7 @@
         setStatus(item, "rs-ok", "✅ 已送出");
         item.note.style.display = "none";
         if (state.me === person){
-          state.data[item.row.dateStr] = { content: item.row.type, location: "", status: SENT_STATUS };
+          state.data[item.row.dateStr] = { content: item.row.type, location: item.row.location || "", status: SENT_STATUS };
         }
         if (PHOTO_OPTIONAL_TYPES.indexOf(item.row.type) !== -1 && !item.row.photoBase64){
           item.note.style.display = "block";
@@ -2726,7 +2999,9 @@
           name: String(pick(r, ["name", "Name", "姓名"]) || "").trim() || nameForUid(uid) || "（未知）",
           userId: uid,
           date: normDate(pick(r, ["date", "Date", "日期"])),
-          location: String(pick(r, ["location", "Location", "館別", "館"]) || "").trim(),
+          location: parseLoc(pick(r, ["location", "Location", "館別", "館"])).hall,
+          room: parseLoc(pick(r, ["location", "Location", "館別", "館"])).room ||
+                String(pick(r, ["room", "Room", "房間"]) || "").trim(),
           content: String(pick(r, ["content", "Content", "內容", "班別"]) || "").trim()
         };
       });
@@ -2785,6 +3060,12 @@
         var nm = document.createElement("span");
         nm.className = "nm";
         nm.textContent = r.name;
+        if (r.room){
+          var rm = document.createElement("span");
+          rm.className = "rm";
+          rm.textContent = r.room;
+          nm.appendChild(rm);
+        }
         var sc = shiftColor(r.content);
         var pill = document.createElement("span");
         pill.className = "pill";
