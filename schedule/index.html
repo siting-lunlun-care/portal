@@ -1,1 +1,1460 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>倫倫排班</title>
+<style>
+  /* 金萱字型：跟入口頁／預休頁一致。字型檔放在 portal 根目錄，排班模組放在
+     portal/schedule/ 子資料夾，所以用上一層路徑讀取。 */
+  @font-face {
+    font-family: "JinXuan";
+    src: url("../jinxuan_subset.woff2") format("woff2");
+    font-weight: 600;
+    font-display: swap;
+  }
 
+  :root{
+    --bg: #FFF8F4;
+    --card: #FFFFFF;
+    --ink: #4A3F3B;
+    --ink-soft: #8A7C76;
+    --accent: #E9A0A8;
+    --accent-dark: #C97882;
+    --accent-soft: #FBE3E6;
+    --line: #F1E4DF;
+    --today-ring: #E9A0A8;
+    --warn: #D9762F;
+    --warn-bg: #FDEEE0;
+    --err: #C9575A;
+    --err-bg: #FBE7E6;
+    --ok: #4C8C6B;
+
+    /* 班別／假別配色：早班暖黃、晚班紫（跟「晚」對應），假別沿用預休頁色系 */
+    --c-早: #FFEAD1;  --t-早: #9A6318;
+    --c-晚: #DFDAF6;  --t-晚: #4C3E96;
+    --c-休假: #A9DCE0;  --t-休假: #1F5A5F;
+    --c-特休: #F6C6C9;  --t-特休: #8A3B3F;
+    --c-其他: #FCE29B;  --t-其他: #7A5B12;
+  }
+
+  *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body{
+    margin:0;
+    background: linear-gradient(180deg, #FFF1EC 0%, #FFF8F4 220px, #FFF8F4 100%);
+    color: var(--ink);
+    font-family: "JinXuan", -apple-system, "PingFang TC", sans-serif;
+    padding-top: calc(56px + env(safe-area-inset-top));
+    padding-bottom: 28px;
+  }
+
+  /* 動態內容用系統字型，不用金萱瘦身字型：員工姓名、館別名稱（來自後端名單）
+     ——這些是不固定的文字，瘦身字型可能沒包含用到的字。 */
+  #greetName, #meta, .loc-chip, .cell-text, .day-row .txt{
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+
+  .app{
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 18px 16px 24px;
+  }
+
+  /* ---- 浮動太陽標題列（跟入口頁同款，點一下回入口頁） ---- */
+  .topbar{
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 30;
+    background: rgba(255, 248, 244, 0.94);
+    backdrop-filter: saturate(1.6) blur(10px);
+    -webkit-backdrop-filter: saturate(1.6) blur(10px);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 2px 12px rgba(180, 130, 120, 0.10);
+    padding-top: env(safe-area-inset-top);
+  }
+  .topbar-inner{
+    max-width: 460px;
+    margin: 0 auto;
+    height: 56px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: inherit;
+  }
+  .topbar .sun{
+    width: 30px; height: 30px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: linear-gradient(140deg, #F5D06A 0%, #E5A92E 100%);
+    display: grid;
+    place-items: center;
+    box-shadow: 0 3px 9px rgba(214, 157, 45, 0.30);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+  .topbar .sun svg{ width: 17px; height: 17px; display: block; }
+  .topbar .title{
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+  }
+  .topbar .back-hint{
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-dark);
+    background: var(--accent-soft);
+    border-radius: 999px;
+    padding: 6px 11px;
+    transition: background-color 0.18s ease, color 0.18s ease;
+  }
+  .topbar-inner:active .sun{ transform: scale(0.94); }
+  .topbar-inner:active .back-hint{ background: var(--accent-dark); color: #fff; }
+  @media (hover:hover){
+    .topbar-inner:hover .sun{
+      transform: rotate(18deg);
+      box-shadow: 0 4px 12px rgba(214, 157, 45, 0.42);
+    }
+    .topbar-inner:hover .back-hint{ background: var(--accent); color: #fff; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .topbar .sun{ transition: none; }
+    .topbar-inner:hover .sun{ transform: none; }
+  }
+
+  .card{
+    background: var(--card);
+    border-radius: 20px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 6px 20px rgba(180, 130, 120, 0.08);
+  }
+
+  .greet{
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent-dark);
+  }
+  .meta{
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: var(--ink-soft);
+    line-height: 1.7;
+  }
+  .meta .tag{
+    display: inline-block;
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 3px 10px;
+    margin-right: 6px;
+  }
+
+  .no-uid{
+    text-align: center;
+    padding: 26px 16px;
+  }
+  .no-uid .big{
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .no-uid .small{
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+  .btn-portal{
+    display: inline-block;
+    background: var(--accent-dark);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 12px 26px;
+    border-radius: 999px;
+    box-shadow: 0 6px 16px rgba(201, 120, 130, 0.32);
+  }
+
+  .month-nav{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .month-nav button{
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    font-size: 18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .month-nav button:active{ background: var(--accent); color:#fff; }
+  .month-nav h2{ font-size: 17px; margin: 0; font-weight: 700; }
+
+  .legend{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin-bottom: 10px;
+    justify-content: center;
+  }
+  .legend-item{
+    display:flex;
+    align-items:center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .legend-dot{
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .loading-hint{
+    text-align:center;
+    font-size: 12px;
+    color: var(--accent-dark);
+    margin-bottom: 8px;
+  }
+
+  .weekday-row{
+    display:grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 4px;
+  }
+  .weekday-row div{
+    text-align:center;
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-weight: 600;
+    padding: 4px 0;
+  }
+
+  .calendar-grid{
+    display:grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+  }
+
+  .day-cell{
+    position: relative;
+    aspect-ratio: 1 / 1;
+    display:flex;
+    flex-direction: column;
+    align-items:center;
+    justify-content:center;
+    gap: 1px;
+    border-radius: 12px;
+    background: #FBF6F3;
+    color: var(--ink);
+    cursor: pointer;
+    user-select: none;
+    overflow: hidden;
+    padding: 2px;
+  }
+  .day-cell.other-month{
+    background: transparent;
+    color: #DCD0CB;
+    cursor: default;
+  }
+  .day-cell.today{ box-shadow: inset 0 0 0 2px var(--today-ring); }
+  .day-cell .num{
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  .day-cell.has-entry .num{
+    font-size: 11px;
+    opacity: 0.75;
+  }
+  .day-cell .cell-text{
+    font-size: 9.5px;
+    font-weight: 700;
+    line-height: 1.15;
+    text-align: center;
+    word-break: keep-all;
+  }
+  .day-cell .cell-text .t2{
+    display: block;
+    font-size: 10.5px;
+  }
+  .day-cell .night-dot{
+    position: absolute;
+    top: 3px; right: 4px;
+    font-size: 9px;
+    line-height: 1;
+  }
+  .day-cell .sat{ color: #6E86B8; }
+  .day-cell .sun-day{ color: var(--err); }
+
+  .summary-row{
+    display:flex;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .summary-pill{
+    flex:1;
+    text-align:center;
+    padding: 10px 4px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 700;
+    background: #FBF6F3;
+    color: var(--ink-soft);
+  }
+  .summary-pill .n{
+    display:block;
+    font-size: 18px;
+    margin-top: 2px;
+    color: var(--ink);
+  }
+
+  h3.section-title{
+    font-size: 14px;
+    margin: 0 0 10px;
+    color: var(--ink);
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+
+  .day-list .day-row{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 11px 4px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+  }
+  .day-list .day-row:last-child{ border-bottom: none; }
+  .day-row .d{ font-weight: 700; flex-shrink: 0; }
+  .day-row .txt{ flex: 1; text-align: right; font-size: 13px; }
+  .pill{
+    display:inline-block;
+    padding: 5px 11px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .empty-hint{
+    text-align:center;
+    color: var(--ink-soft);
+    font-size: 13px;
+    padding: 18px 0;
+  }
+
+  .footnote{
+    text-align:center;
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+    line-height: 1.7;
+  }
+
+  .load-error{
+    margin-top: 12px;
+    background: var(--warn-bg);
+    border-radius: 14px;
+    padding: 12px;
+    text-align: center;
+  }
+  .load-error p{
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: var(--warn);
+    font-weight: 600;
+  }
+  .btn-retry{
+    border: none;
+    background: var(--warn);
+    color: #fff;
+    font-weight: 700;
+    padding: 9px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+  }
+
+  /* ---- 底部彈出選單 ---- */
+  .overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(60, 45, 40, 0.35);
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 50;
+  }
+  .overlay.active{ opacity: 1; pointer-events: auto; }
+  .sheet{
+    width: 100%;
+    max-width: 460px;
+    background: var(--card);
+    border-radius: 22px 22px 0 0;
+    padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+    transform: translateY(100%);
+    transition: transform 0.25s ease;
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+  .overlay.active .sheet{ transform: translateY(0); }
+  .sheet-handle{
+    width: 40px; height: 4px;
+    border-radius: 999px;
+    background: var(--line);
+    margin: 0 auto 14px;
+  }
+  .sheet h3{ text-align:center; margin: 0 0 4px; font-size: 16px; }
+  .sheet .sub{
+    text-align:center;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin: 0 0 16px;
+  }
+
+  .seg{
+    display:flex;
+    background: var(--accent-soft);
+    border-radius: 999px;
+    padding: 4px;
+    margin-bottom: 16px;
+    gap: 4px;
+  }
+  .seg button{
+    flex:1;
+    border:none;
+    background: transparent;
+    color: var(--accent-dark);
+    font-weight: 700;
+    font-size: 13px;
+    padding: 11px 6px;
+    border-radius: 999px;
+  }
+  .seg button.active{ background: var(--accent-dark); color: #fff; }
+
+  .field-label{
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin: 0 0 8px;
+  }
+  .field-label .hint{
+    font-weight: 600;
+    color: #B7A9A3;
+  }
+
+  .chip-row{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .loc-chip{
+    border: none;
+    background: #F3EEEC;
+    color: var(--ink-soft);
+    font-weight: 700;
+    font-size: 14px;
+    padding: 11px 20px;
+    border-radius: 999px;
+  }
+  .loc-chip.selected{
+    background: var(--accent-dark);
+    color: #fff;
+  }
+
+  .shift-group{ margin-bottom: 14px; }
+  .shift-group .gname{
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin-bottom: 7px;
+  }
+  .shift-list{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .shift-btn{
+    border: none;
+    border-radius: 14px;
+    padding: 13px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    position: relative;
+    line-height: 1.35;
+  }
+  .shift-btn .when{
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    opacity: 0.8;
+    margin-top: 2px;
+  }
+  .shift-btn.selected{ box-shadow: inset 0 0 0 3px rgba(0,0,0,0.18); }
+  .shift-btn.selected::after{
+    content: "✓";
+    position: absolute;
+    top: 4px; right: 8px;
+    font-size: 11px;
+  }
+
+  .type-grid{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .type-btn{
+    border: none;
+    border-radius: 14px;
+    padding: 15px 4px;
+    font-size: 14px;
+    font-weight: 700;
+    position: relative;
+  }
+  .type-btn.selected{ box-shadow: inset 0 0 0 3px rgba(0,0,0,0.18); }
+  .type-btn.selected::after{
+    content: "✓";
+    position: absolute;
+    top: 4px; right: 8px;
+    font-size: 11px;
+  }
+
+  .sheet-actions{
+    display:flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .btn-primary{
+    width: 100%;
+    border: none;
+    background: var(--accent-dark);
+    color: #fff;
+    font-weight: 700;
+    font-size: 16px;
+    padding: 15px;
+    border-radius: 16px;
+    box-shadow: 0 8px 18px rgba(201, 120, 130, 0.35);
+  }
+  .btn-primary:disabled{ background: #D8CFCB; box-shadow: none; }
+  .btn-primary:active:not(:disabled){ background: var(--accent); }
+  .btn-danger{
+    border: none;
+    background: var(--err-bg);
+    color: var(--err);
+    font-weight: 700;
+    padding: 13px;
+    border-radius: 14px;
+    font-size: 14px;
+  }
+  .btn-danger:active{ background: var(--err); color: #fff; }
+  .btn-danger:disabled{ opacity: 0.5; }
+  .btn-close{
+    border: none;
+    background: #F3EEEC;
+    color: var(--ink-soft);
+    font-weight: 600;
+    padding: 13px;
+    border-radius: 14px;
+    font-size: 14px;
+  }
+
+  /* Toast */
+  .toast{
+    position: fixed;
+    left: 50%;
+    bottom: 40px;
+    transform: translate(-50%, 12px);
+    background: var(--ink);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s ease;
+    z-index: 90;
+    max-width: 85%;
+    text-align: center;
+  }
+  .toast.show{ opacity: 1; transform: translate(-50%, 0); }
+  .toast.error{ background: var(--err); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="topbar-inner" href="https://siting-lunlun-care.github.io/portal/" aria-label="倫倫排班，點此返回員工系統入口">
+    <span class="sun" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>
+        <circle cx="12" cy="12" r="3.4"/>
+      </svg>
+    </span>
+    <span class="title">倫倫排班</span>
+    <span class="back-hint">返回入口 ›</span>
+  </a>
+</header>
+
+<div class="app">
+
+  <!-- 沒有 uid（或名單裡查無此人）時顯示這段，其他區塊全部隱藏 -->
+  <div class="card no-uid" id="noUidCard" style="display:none;">
+    <div class="big" id="noUidTitle">請從入口進入</div>
+    <div class="small" id="noUidMsg">這個頁面需要從員工系統入口點進來，才知道你是誰。</div>
+    <a class="btn-portal" href="https://siting-lunlun-care.github.io/portal/">前往入口 ›</a>
+  </div>
+
+  <!-- 身分卡：哈囉 〇〇 ＋ 班別/館別資訊 -->
+  <div class="card" id="meCard" style="display:none;">
+    <p class="greet">哈囉 <span id="greetName"></span></p>
+    <p class="meta" id="meta"></p>
+    <div class="load-error" id="loadError" style="display:none;">
+      <p id="loadErrorMsg">載入名單失敗，請檢查網路後再試一次。</p>
+      <button type="button" class="btn-retry" id="retryBtn">重新載入</button>
+    </div>
+  </div>
+
+  <!-- 月曆 -->
+  <div class="card" id="calCard" style="display:none;">
+    <div class="month-nav">
+      <button type="button" id="prevMonthBtn" aria-label="上個月">‹</button>
+      <h2 id="monthLabel">—</h2>
+      <button type="button" id="nextMonthBtn" aria-label="下個月">›</button>
+    </div>
+
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot" style="background:var(--c-早)"></span>早班</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--c-晚)"></span>晚班 🌙</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--c-休假)"></span>休假</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--c-特休)"></span>特休</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--c-其他)"></span>其他假</span>
+    </div>
+
+    <div class="loading-hint" id="calLoading" style="display:none;">載入排班中…</div>
+
+    <div class="weekday-row">
+      <div class="sun-day">日</div><div>一</div><div>二</div><div>三</div>
+      <div>四</div><div>五</div><div class="sat">六</div>
+    </div>
+    <div class="calendar-grid" id="calendarGrid"></div>
+
+    <div class="summary-row">
+      <div class="summary-pill">上班<span class="n" id="cntWork">0</span></div>
+      <div class="summary-pill">晚班<span class="n" id="cntNight">0</span></div>
+      <div class="summary-pill">休假／請假<span class="n" id="cntLeave">0</span></div>
+    </div>
+
+    <p class="footnote">點一下日期就能排班；已排的日期再點一次可以修改或刪除。</p>
+  </div>
+
+  <!-- 本月清單 -->
+  <div class="card" id="listCard" style="display:none;">
+    <h3 class="section-title">📋 本月已排</h3>
+    <div class="day-list" id="dayList"></div>
+  </div>
+
+</div>
+
+<!-- 單日排班選單 -->
+<div class="overlay" id="dayOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3 id="sheetDate">—</h3>
+    <p class="sub" id="sheetSub">選擇這天要上班還是休假</p>
+
+    <div class="seg">
+      <button type="button" id="segWorkBtn" class="active">上班</button>
+      <button type="button" id="segLeaveBtn">休假／請假</button>
+    </div>
+
+    <div id="workPane">
+      <p class="field-label">這天在哪個館</p>
+      <div class="chip-row" id="locRow"></div>
+      <p class="field-label">班別 <span class="hint" id="shiftHint"></span></p>
+      <div id="shiftGroups"></div>
+    </div>
+
+    <div id="leavePane" style="display:none;">
+      <p class="field-label">假別</p>
+      <div class="type-grid" id="leaveGrid"></div>
+    </div>
+
+    <div class="sheet-actions">
+      <button type="button" class="btn-primary" id="saveDayBtn" disabled>存這天</button>
+      <button type="button" class="btn-danger" id="delDayBtn" style="display:none;">刪除這天</button>
+      <button type="button" class="btn-close" id="closeSheetBtn">關閉</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ============================================================
+  // 設定
+  // ============================================================
+
+  // 排班系統（存、讀、刪排班）
+  var SCHEDULE_GAS_URL = "https://script.google.com/macros/s/AKfycbyX_tGPVV_RRZfX2Lx6V7oKIcUbYqxlBPASgVyWklwk28Llm4yfF3serYLVsOvF63koYg/exec";
+  // 請假系統（只拿名單：姓名／userId／dept／area／shift／shiftType）
+  var ROSTER_GAS_URL = "https://script.google.com/macros/s/AKfycbzitK29DxZdY8GKoWudHUXA8RBFHQBLQ7DUWuJeulM-zLkl7iMRvFYROThJgLVa9oDy/exec";
+
+  var WEEKDAY_ZH = ["日","一","二","三","四","五","六"];
+
+  // 班別目錄：name 就是存到後端的「內容」，含「(晚)」的自動算晚班。
+  // short/when 只是月曆格子上的縮寫顯示，不影響存檔內容。
+  var SHIFT_GROUPS = {
+    "暗8": {
+      label: "暗 8H",
+      items: [
+        { name: "暗8H-0900(早)", short: "暗8H", when: "0900" },
+        { name: "暗8H-1000(早)", short: "暗8H", when: "1000" },
+        { name: "暗8H-1200(晚)", short: "暗8H", when: "1200" }
+      ]
+    },
+    "暗10": {
+      label: "暗 10H／暗 10 吃",
+      items: [
+        { name: "暗10H-0930(早)", short: "暗10H", when: "0930" },
+        { name: "暗10H-1000(早)", short: "暗10H", when: "1000" },
+        { name: "暗10H-1030(晚)", short: "暗10H", when: "1030" },
+        { name: "暗10吃-0930(早)", short: "暗10吃", when: "0930" },
+        { name: "暗10吃-1000(晚)", short: "暗10吃", when: "1000" }
+      ]
+    },
+    "明10": {
+      label: "明 10H",
+      items: [
+        { name: "明10H-0900(早)", short: "明10H", when: "0900" },
+        { name: "明10H-0930(早)", short: "明10H", when: "0930" },
+        { name: "明10H-1000(晚)", short: "明10H", when: "1000" }
+      ]
+    }
+  };
+
+  // 假別；分三類上色（休假／特休／其他）
+  var LEAVE_TYPES = ["休假", "特休", "事假", "病假", "喪假", "婚假", "產假", "產檢假", "育嬰假"];
+  function leaveCategory(t){
+    if (t === "休假") return "休假";
+    if (t === "特休") return "特休";
+    return "其他";
+  }
+
+  function pad(n){ return n < 10 ? "0" + n : "" + n; }
+  function isoDate(y, m, d){ return y + "-" + pad(m+1) + "-" + pad(d); }
+  function monthKey(y, m){ return y + "-" + pad(m+1); }
+  function isNightShift(name){ return name.indexOf("(晚)") !== -1; }
+
+  // 從網址讀入口頁帶過來的 ?uid=...：手動解析＋decodeURIComponent，
+  // 不用 URLSearchParams 是為了避免重複解碼（跟預休頁同一套寫法）。
+  function getQueryParam(name){
+    var search = window.location.search.replace(/^\?/, "");
+    if (!search) return null;
+    var pairs = search.split("&");
+    for (var i = 0; i < pairs.length; i++){
+      if (!pairs[i]) continue;
+      var kv = pairs[i].split("=");
+      var key = decodeURIComponent((kv[0] || "").replace(/\+/g, " "));
+      if (key === name){
+        return kv.length > 1 ? decodeURIComponent(kv.slice(1).join("=").replace(/\+/g, " ")) : "";
+      }
+    }
+    return null;
+  }
+
+  var urlUid = getQueryParam("uid");
+
+  // ============================================================
+  // 後端連線（CORS）
+  // ============================================================
+  // GAS 的 GET 會走 script.googleusercontent.com 轉址、本來就帶 CORS 標頭可直接讀；
+  // POST 只要不用 application/json（避免觸發預檢 OPTIONS，Apps Script 沒實作 doOptions），
+  // 改用 text/plain 送出就能正常讀到回應——所以這裡「不」用 no-cors，
+  // 才能在畫面上顯示真正的成功／失敗，而不是只知道「送出去了」。
+  function postJSON(url, payload){
+    return fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+      cache: "no-store" // 避免快取到轉址時效已過的舊回應，造成偶發 404
+    }).then(function(res){
+      return res.text().then(function(text){
+        var data = null;
+        try { data = text ? JSON.parse(text) : null; } catch(e){}
+        return { httpOk: res.ok, status: res.status, data: data, raw: text };
+      });
+    }).catch(function(err){
+      return { httpOk: false, networkError: true, error: err };
+    });
+  }
+
+  function getJSON(url){
+    return fetch(url, { cache: "no-store" }).then(function(res){
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.text().then(function(text){
+        try { return JSON.parse(text); }
+        catch(e){ throw new Error("回應不是 JSON：" + text.slice(0, 80)); }
+      });
+    });
+  }
+
+  function isBackendSuccess(result){
+    if (!result || result.networkError || !result.httpOk) return false;
+    var d = result.data;
+    if (d && typeof d === "object"){
+      if (d.result === "ERROR") return false;
+      if (d.success === false) return false;
+      if (d.error) return false;
+    }
+    return true;
+  }
+
+  function errorText(result){
+    if (!result) return "未知錯誤";
+    if (result.networkError) return "連不到伺服器";
+    var d = result.data;
+    if (d && typeof d === "object" && (d.message || d.error)) return String(d.message || d.error);
+    if (!result.httpOk) return "HTTP " + result.status;
+    return "存檔失敗";
+  }
+
+  // ---- 小提示 toast ----
+  var toastEl = document.getElementById("toast");
+  var toastTimer = null;
+  function showToast(msg, isError){
+    toastEl.textContent = msg;
+    toastEl.className = "toast show" + (isError ? " error" : "");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.remove("show"); }, 2600);
+  }
+
+  // ============================================================
+  // 狀態
+  // ============================================================
+  var now = new Date();
+  var state = {
+    me: null,            // { name, userId, dept, areas:[], shift, shiftType }
+    groups: [],          // 這個人可以選的班別群組 key，第一個是主要群組
+    viewYear: now.getFullYear(),
+    viewMonth: now.getMonth(),
+    data: {},            // { "YYYY-MM-DD": { content, location, isNight, kind:"work"|"leave" } }
+    loadedMonth: null,
+    sheetDate: null,
+    sheetMode: "work",   // "work" | "leave"
+    pickLoc: null,
+    pickShift: null,
+    pickLeave: null,
+    busy: false
+  };
+
+  var el = {
+    noUidCard: document.getElementById("noUidCard"),
+    noUidTitle: document.getElementById("noUidTitle"),
+    noUidMsg: document.getElementById("noUidMsg"),
+    meCard: document.getElementById("meCard"),
+    calCard: document.getElementById("calCard"),
+    listCard: document.getElementById("listCard"),
+    greetName: document.getElementById("greetName"),
+    meta: document.getElementById("meta"),
+    loadError: document.getElementById("loadError"),
+    loadErrorMsg: document.getElementById("loadErrorMsg"),
+    calLoading: document.getElementById("calLoading"),
+    grid: document.getElementById("calendarGrid"),
+    monthLabel: document.getElementById("monthLabel"),
+    dayList: document.getElementById("dayList"),
+    overlay: document.getElementById("dayOverlay"),
+    sheetDate: document.getElementById("sheetDate"),
+    sheetSub: document.getElementById("sheetSub"),
+    locRow: document.getElementById("locRow"),
+    shiftGroups: document.getElementById("shiftGroups"),
+    shiftHint: document.getElementById("shiftHint"),
+    leaveGrid: document.getElementById("leaveGrid"),
+    workPane: document.getElementById("workPane"),
+    leavePane: document.getElementById("leavePane"),
+    segWorkBtn: document.getElementById("segWorkBtn"),
+    segLeaveBtn: document.getElementById("segLeaveBtn"),
+    saveBtn: document.getElementById("saveDayBtn"),
+    delBtn: document.getElementById("delDayBtn"),
+    cntWork: document.getElementById("cntWork"),
+    cntNight: document.getElementById("cntNight"),
+    cntLeave: document.getElementById("cntLeave")
+  };
+
+  // ============================================================
+  // 認人：用網址的 uid 去名單裡找
+  // ============================================================
+  function showNoUid(title, msg){
+    el.noUidCard.style.display = "block";
+    el.noUidTitle.textContent = title;
+    el.noUidMsg.textContent = msg;
+    el.meCard.style.display = "none";
+    el.calCard.style.display = "none";
+    el.listCard.style.display = "none";
+  }
+
+  // 名單的 shift 可能是數字 8/10 或字串；shiftType 後端寫「B」或「正常」，
+  // 這裡一律正規化，只要含 B 就當 B 班。
+  function normShift(v){ return String(v == null ? "" : v).trim(); }
+  function isBType(v){ return normShift(v).toUpperCase().indexOf("B") !== -1; }
+
+  // 依身分決定可選班別群組；回傳的第一個群組就是預設主要班別。
+  function groupsFor(shift, shiftType){
+    var s = normShift(shift);
+    if (s === "8" && isBType(shiftType)) return ["暗8"];
+    if (s === "10" && isBType(shiftType)) return ["暗10"];
+    if (s === "10" && normShift(shiftType).indexOf("正常") !== -1) return ["明10", "暗10"];
+    return []; // 名單沒填班別 → 之後開放全部並提示
+  }
+
+  function loadRoster(){
+    el.loadError.style.display = "none";
+    getJSON(ROSTER_GAS_URL + "?action=getRoster")
+      .then(function(list){
+        var found = null;
+        (list || []).forEach(function(p){
+          if (!p) return;
+          if (String(p.userId || "").trim() === urlUid) found = p;
+        });
+        if (!found){
+          showNoUid("找不到你的資料", "名單裡沒有這個身分（uid），請重新從入口進入，或找管理員確認名單。");
+          return;
+        }
+        var areas = String(found.area || "").split(/[,，、]/)
+          .map(function(a){ return a.trim(); })
+          .filter(function(a){ return a; });
+
+        state.me = {
+          name: String(found.name || "").trim(),
+          userId: String(found.userId || "").trim(),
+          dept: String(found.dept || "").trim(),
+          areas: areas,
+          shift: normShift(found.shift),
+          shiftType: normShift(found.shiftType)
+        };
+        state.groups = groupsFor(state.me.shift, state.me.shiftType);
+        renderMe();
+        el.meCard.style.display = "block";
+        el.calCard.style.display = "block";
+        el.listCard.style.display = "block";
+        loadMonth();
+      })
+      .catch(function(err){
+        console.error("[名單] 載入失敗", err);
+        el.meCard.style.display = "block";
+        el.loadError.style.display = "block";
+        el.loadErrorMsg.textContent = "載入名單失敗（" + err.message + "），請檢查網路後再試一次。";
+      });
+  }
+
+  function renderMe(){
+    var me = state.me;
+    el.greetName.textContent = me.name;
+
+    var bits = [];
+    if (me.shift) bits.push('<span class="tag">' + me.shift + ' 小時</span>');
+    if (me.shiftType) bits.push('<span class="tag">' + (isBType(me.shiftType) ? "B班" : me.shiftType) + '</span>');
+    var line1 = bits.join("");
+    var line2 = me.areas.length ? "館別：" + me.areas.join("、") : "館別：名單未填";
+    var line3 = "";
+    if (!state.groups.length){
+      line3 = '<br><span style="color:var(--warn);font-weight:700;">名單沒有填班別（8/10、B班/正常），先開放全部班別，請找管理員補上。</span>';
+    }
+    el.meta.innerHTML = line1 + "<br>" + line2 + line3;
+  }
+
+  // ============================================================
+  // 讀取／畫月曆
+  // ============================================================
+
+  // 後端回傳的日期可能是 "YYYY-MM-DD" 或 ISO 時間字串，統一轉成 YYYY-MM-DD。
+  function normDate(v){
+    if (!v) return "";
+    var s = String(v).trim();
+    var m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (m) return m[1] + "-" + pad(parseInt(m[2],10)) + "-" + pad(parseInt(m[3],10));
+    var d = new Date(s);
+    if (!isNaN(d.getTime())) return isoDate(d.getFullYear(), d.getMonth(), d.getDate());
+    return "";
+  }
+
+  // 後端欄位名稱不確定，中英文 key 都接受，避免一改就爆。
+  function pick(row, keys){
+    for (var i = 0; i < keys.length; i++){
+      if (row[keys[i]] !== undefined && row[keys[i]] !== null && row[keys[i]] !== "") return row[keys[i]];
+    }
+    return "";
+  }
+
+  function loadMonth(){
+    var mKey = monthKey(state.viewYear, state.viewMonth);
+    state.data = {};
+    state.loadedMonth = null;
+    renderCalendar();
+    renderList();
+    el.calLoading.style.display = "block";
+    el.calLoading.textContent = "載入排班中…";
+
+    var url = SCHEDULE_GAS_URL + "?action=getSchedule"
+      + "&userId=" + encodeURIComponent(state.me.userId)
+      + "&month=" + encodeURIComponent(mKey);
+
+    getJSON(url)
+      .then(function(res){
+        var rows = res;
+        if (rows && !Array.isArray(rows)){
+          rows = rows.data || rows.list || rows.records || rows.schedule || [];
+        }
+        var data = {};
+        (rows || []).forEach(function(row){
+          if (!row || typeof row !== "object") return;
+          var date = normDate(pick(row, ["date", "Date", "日期"]));
+          if (!date) return;
+          var content = String(pick(row, ["content", "Content", "內容", "班別"]) || "").trim();
+          if (!content) return;
+          var location = String(pick(row, ["location", "Location", "館別", "館"]) || "").trim();
+          var nightRaw = String(pick(row, ["isNight", "IsNight", "晚班", "是否晚班"]) || "").trim();
+          var isNight = nightRaw === "是" || nightRaw === "true" || nightRaw === "TRUE" || isNightShift(content);
+          data[date] = {
+            content: content,
+            location: location,
+            isNight: isNight,
+            kind: LEAVE_TYPES.indexOf(content) !== -1 ? "leave" : "work"
+          };
+        });
+        state.data = data;
+        state.loadedMonth = mKey;
+        el.calLoading.style.display = "none";
+        renderCalendar();
+        renderList();
+      })
+      .catch(function(err){
+        console.error("[排班] 載入失敗", err);
+        el.calLoading.style.display = "block";
+        el.calLoading.textContent = "⚠️ 載入這個月的排班失敗（" + err.message + "）";
+      });
+  }
+
+  function cellStyleFor(entry){
+    if (entry.kind === "leave"){
+      var cat = leaveCategory(entry.content);
+      return { bg: "var(--c-" + cat + ")", fg: "var(--t-" + cat + ")" };
+    }
+    return entry.isNight
+      ? { bg: "var(--c-晚)", fg: "var(--t-晚)" }
+      : { bg: "var(--c-早)", fg: "var(--t-早)" };
+  }
+
+  // 月曆格子空間小：上班顯示「班別縮寫＋時間」兩行，假別直接顯示假別名稱。
+  function findShiftMeta(content){
+    for (var g in SHIFT_GROUPS){
+      var items = SHIFT_GROUPS[g].items;
+      for (var i = 0; i < items.length; i++){
+        if (items[i].name === content) return items[i];
+      }
+    }
+    return null;
+  }
+
+  function renderCalendar(){
+    var y = state.viewYear, m = state.viewMonth;
+    el.monthLabel.textContent = y + "年" + (m+1) + "月";
+    el.grid.innerHTML = "";
+
+    var firstDayOfWeek = new Date(y, m, 1).getDay();
+    var daysInMonth = new Date(y, m+1, 0).getDate();
+    var daysInPrevMonth = new Date(y, m, 0).getDate();
+    var totalCells = Math.ceil((firstDayOfWeek + daysInMonth) / 7) * 7;
+    var todayIso = isoDate(now.getFullYear(), now.getMonth(), now.getDate());
+
+    for (var i = 0; i < totalCells; i++){
+      var cell = document.createElement("div");
+      cell.className = "day-cell";
+
+      var dayNum, cellIso = null, inCurrentMonth = true;
+      if (i < firstDayOfWeek){
+        dayNum = daysInPrevMonth - (firstDayOfWeek - 1 - i);
+        inCurrentMonth = false;
+      } else if (i >= firstDayOfWeek + daysInMonth){
+        dayNum = i - (firstDayOfWeek + daysInMonth) + 1;
+        inCurrentMonth = false;
+      } else {
+        dayNum = i - firstDayOfWeek + 1;
+        cellIso = isoDate(y, m, dayNum);
+      }
+      if (!inCurrentMonth) cell.classList.add("other-month");
+
+      var numSpan = document.createElement("span");
+      numSpan.className = "num";
+      numSpan.textContent = dayNum;
+      if (inCurrentMonth){
+        var dow = i % 7;
+        if (dow === 0) numSpan.classList.add("sun-day");
+        if (dow === 6) numSpan.classList.add("sat");
+      }
+      cell.appendChild(numSpan);
+
+      if (inCurrentMonth){
+        var entry = state.data[cellIso];
+        if (entry){
+          cell.classList.add("has-entry");
+          var st = cellStyleFor(entry);
+          cell.style.background = st.bg;
+          cell.style.color = st.fg;
+
+          var txt = document.createElement("span");
+          txt.className = "cell-text";
+          if (entry.kind === "work"){
+            var meta = findShiftMeta(entry.content);
+            if (meta){
+              txt.innerHTML = meta.short + '<span class="t2">' + meta.when + "</span>";
+            } else {
+              txt.textContent = entry.content;
+            }
+          } else {
+            txt.textContent = entry.content;
+          }
+          cell.appendChild(txt);
+
+          if (entry.isNight){
+            var dot = document.createElement("span");
+            dot.className = "night-dot";
+            dot.textContent = "🌙";
+            cell.appendChild(dot);
+          }
+        }
+        if (cellIso === todayIso) cell.classList.add("today");
+        cell.addEventListener("click", (function(dateStr){
+          return function(){ openSheet(dateStr); };
+        })(cellIso));
+      }
+
+      el.grid.appendChild(cell);
+    }
+
+    var work = 0, night = 0, leave = 0;
+    Object.keys(state.data).forEach(function(d){
+      var e = state.data[d];
+      if (e.kind === "leave"){ leave++; }
+      else { work++; if (e.isNight) night++; }
+    });
+    el.cntWork.textContent = work;
+    el.cntNight.textContent = night;
+    el.cntLeave.textContent = leave;
+  }
+
+  function renderList(){
+    var dates = Object.keys(state.data).sort();
+    if (!dates.length){
+      el.dayList.innerHTML = '<div class="empty-hint">這個月還沒有排班</div>';
+      return;
+    }
+    el.dayList.innerHTML = "";
+    dates.forEach(function(dateStr){
+      var e = state.data[dateStr];
+      var parts = dateStr.split("-");
+      var d = new Date(+parts[0], +parts[1]-1, +parts[2]);
+      var st = cellStyleFor(e);
+
+      var row = document.createElement("div");
+      row.className = "day-row";
+
+      var dEl = document.createElement("span");
+      dEl.className = "d";
+      dEl.textContent = (+parts[1]) + "/" + (+parts[2]) + "（" + WEEKDAY_ZH[d.getDay()] + "）";
+      row.appendChild(dEl);
+
+      var txtEl = document.createElement("span");
+      txtEl.className = "txt";
+      txtEl.textContent = e.kind === "work" && e.location ? e.location : "";
+      row.appendChild(txtEl);
+
+      var pill = document.createElement("span");
+      pill.className = "pill";
+      pill.style.background = st.bg;
+      pill.style.color = st.fg;
+      pill.textContent = e.content + (e.isNight ? " 🌙" : "");
+      row.appendChild(pill);
+
+      row.addEventListener("click", function(){ openSheet(dateStr); });
+      el.dayList.appendChild(row);
+    });
+  }
+
+  // ============================================================
+  // 單日排班選單
+  // ============================================================
+  function openSheet(dateStr){
+    var parts = dateStr.split("-");
+    var d = new Date(+parts[0], +parts[1]-1, +parts[2]);
+    state.sheetDate = dateStr;
+
+    el.sheetDate.textContent = (+parts[1]) + "月" + (+parts[2]) + "日（" + WEEKDAY_ZH[d.getDay()] + "）";
+
+    var existing = state.data[dateStr];
+    if (existing){
+      el.sheetSub.textContent = "目前：" + existing.content + (existing.location ? "・" + existing.location : "");
+      state.sheetMode = existing.kind === "leave" ? "leave" : "work";
+      state.pickShift = existing.kind === "work" ? existing.content : null;
+      state.pickLeave = existing.kind === "leave" ? existing.content : null;
+      state.pickLoc = existing.kind === "work" && existing.location ? existing.location : null;
+      el.delBtn.style.display = "block";
+    } else {
+      el.sheetSub.textContent = "選擇這天要上班還是休假";
+      state.sheetMode = "work";
+      state.pickShift = null;
+      state.pickLeave = null;
+      state.pickLoc = null;
+      el.delBtn.style.display = "none";
+    }
+
+    // 只有一個館就直接選好，不用再點
+    if (!state.pickLoc && state.me.areas.length === 1) state.pickLoc = state.me.areas[0];
+
+    el.delBtn.disabled = false;
+    el.saveBtn.textContent = "存這天";
+    renderLocRow();
+    renderShiftGroups();
+    renderLeaveGrid();
+    applyMode();
+    el.overlay.classList.add("active");
+  }
+
+  function closeSheet(){
+    el.overlay.classList.remove("active");
+    state.sheetDate = null;
+  }
+
+  function applyMode(){
+    var isWork = state.sheetMode === "work";
+    el.segWorkBtn.classList.toggle("active", isWork);
+    el.segLeaveBtn.classList.toggle("active", !isWork);
+    el.workPane.style.display = isWork ? "block" : "none";
+    el.leavePane.style.display = isWork ? "none" : "block";
+    refreshSaveBtn();
+  }
+
+  function refreshSaveBtn(){
+    var ok;
+    if (state.sheetMode === "work"){
+      ok = !!state.pickShift && (!!state.pickLoc || state.me.areas.length === 0);
+    } else {
+      ok = !!state.pickLeave;
+    }
+    el.saveBtn.disabled = !ok || state.busy;
+  }
+
+  function renderLocRow(){
+    el.locRow.innerHTML = "";
+    if (!state.me.areas.length){
+      var warn = document.createElement("span");
+      warn.style.cssText = "font-size:12px;color:var(--warn);font-weight:700;";
+      warn.textContent = "名單裡沒有填你的館別，會以空白存檔，請找管理員補上。";
+      el.locRow.appendChild(warn);
+      return;
+    }
+    state.me.areas.forEach(function(area){
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "loc-chip" + (state.pickLoc === area ? " selected" : "");
+      btn.textContent = area;
+      btn.addEventListener("click", function(){
+        state.pickLoc = area;
+        renderLocRow();
+        refreshSaveBtn();
+      });
+      el.locRow.appendChild(btn);
+    });
+  }
+
+  function renderShiftGroups(){
+    el.shiftGroups.innerHTML = "";
+    var groups = state.groups.length ? state.groups : ["明10", "暗10", "暗8"];
+    el.shiftHint.textContent = state.groups.length > 1 ? "（以 " + SHIFT_GROUPS[groups[0]].label + " 為主）" : "";
+
+    groups.forEach(function(gKey, gi){
+      var g = SHIFT_GROUPS[gKey];
+      var wrap = document.createElement("div");
+      wrap.className = "shift-group";
+
+      var gname = document.createElement("div");
+      gname.className = "gname";
+      gname.textContent = g.label + (groups.length > 1 && gi === 0 ? "（主要）" : "");
+      wrap.appendChild(gname);
+
+      var list = document.createElement("div");
+      list.className = "shift-list";
+      g.items.forEach(function(item){
+        var night = isNightShift(item.name);
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "shift-btn" + (state.pickShift === item.name ? " selected" : "");
+        btn.style.background = night ? "var(--c-晚)" : "var(--c-早)";
+        btn.style.color = night ? "var(--t-晚)" : "var(--t-早)";
+        btn.innerHTML = item.short + '<span class="when">' + item.when + (night ? " 晚班 🌙" : " 早班") + "</span>";
+        btn.addEventListener("click", function(){
+          state.pickShift = item.name;
+          renderShiftGroups();
+          refreshSaveBtn();
+        });
+        list.appendChild(btn);
+      });
+      wrap.appendChild(list);
+      el.shiftGroups.appendChild(wrap);
+    });
+  }
+
+  function renderLeaveGrid(){
+    el.leaveGrid.innerHTML = "";
+    LEAVE_TYPES.forEach(function(t){
+      var cat = leaveCategory(t);
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "type-btn" + (state.pickLeave === t ? " selected" : "");
+      btn.style.background = "var(--c-" + cat + ")";
+      btn.style.color = "var(--t-" + cat + ")";
+      btn.textContent = t;
+      btn.addEventListener("click", function(){
+        state.pickLeave = t;
+        renderLeaveGrid();
+        refreshSaveBtn();
+      });
+      el.leaveGrid.appendChild(btn);
+    });
+  }
+
+  // ---- 存 ----
+  function saveDay(){
+    if (state.busy || !state.sheetDate) return;
+    var dateStr = state.sheetDate;
+    var isWork = state.sheetMode === "work";
+    var content = isWork ? state.pickShift : state.pickLeave;
+    if (!content) return;
+
+    // 休假／請假那天不算在任何館，location 存空字串；上班才帶選到的館。
+    var location = isWork ? (state.pickLoc || "") : "";
+    var night = isWork && isNightShift(content);
+
+    state.busy = true;
+    el.saveBtn.disabled = true;
+    el.saveBtn.textContent = "存檔中…";
+
+    postJSON(SCHEDULE_GAS_URL, {
+      action: "saveSchedule",
+      name: state.me.name,
+      userId: state.me.userId,
+      location: location,
+      date: dateStr,
+      content: content,
+      isNight: night ? "是" : "否",
+      isSpecial: "否",
+      specialNote: "",
+      status: "未鎖"
+    }).then(function(result){
+      state.busy = false;
+      el.saveBtn.textContent = "存這天";
+      if (!isBackendSuccess(result)){
+        refreshSaveBtn();
+        showToast("存檔失敗：" + errorText(result), true);
+        return;
+      }
+      state.data[dateStr] = {
+        content: content,
+        location: location,
+        isNight: night,
+        kind: isWork ? "work" : "leave"
+      };
+      renderCalendar();
+      renderList();
+      closeSheet();
+      showToast("已存：" + dateStr.slice(5).replace("-", "/") + " " + content);
+    });
+  }
+
+  // ---- 刪 ----
+  function deleteDay(){
+    if (state.busy || !state.sheetDate) return;
+    var dateStr = state.sheetDate;
+    state.busy = true;
+    el.delBtn.disabled = true;
+    el.saveBtn.disabled = true;
+    el.delBtn.textContent = "刪除中…";
+
+    postJSON(SCHEDULE_GAS_URL, {
+      action: "deleteSchedule",
+      userId: state.me.userId,
+      date: dateStr
+    }).then(function(result){
+      state.busy = false;
+      el.delBtn.textContent = "刪除這天";
+      el.delBtn.disabled = false;
+      if (!isBackendSuccess(result)){
+        refreshSaveBtn();
+        showToast("刪除失敗：" + errorText(result), true);
+        return;
+      }
+      delete state.data[dateStr];
+      renderCalendar();
+      renderList();
+      closeSheet();
+      showToast("已刪除 " + dateStr.slice(5).replace("-", "/"));
+    });
+  }
+
+  // ============================================================
+  // 事件
+  // ============================================================
+  document.getElementById("prevMonthBtn").addEventListener("click", function(){
+    if (state.viewMonth === 0){ state.viewMonth = 11; state.viewYear--; }
+    else { state.viewMonth--; }
+    loadMonth();
+  });
+  document.getElementById("nextMonthBtn").addEventListener("click", function(){
+    if (state.viewMonth === 11){ state.viewMonth = 0; state.viewYear++; }
+    else { state.viewMonth++; }
+    loadMonth();
+  });
+  el.segWorkBtn.addEventListener("click", function(){ state.sheetMode = "work"; applyMode(); });
+  el.segLeaveBtn.addEventListener("click", function(){ state.sheetMode = "leave"; applyMode(); });
+  el.saveBtn.addEventListener("click", saveDay);
+  el.delBtn.addEventListener("click", deleteDay);
+  document.getElementById("closeSheetBtn").addEventListener("click", closeSheet);
+  el.overlay.addEventListener("click", function(e){ if (e.target === el.overlay) closeSheet(); });
+  document.getElementById("retryBtn").addEventListener("click", loadRoster);
+
+  // ============================================================
+  // 啟動
+  // ============================================================
+  if (!urlUid){
+    showNoUid("請從入口進入", "這個頁面需要從員工系統入口點進來，才知道你是誰。");
+  } else {
+    loadRoster();
+  }
+})();
+</script>
+</body>
+</html>
