@@ -15,34 +15,50 @@
   }
 
   :root{
-    --bg: #FFF8F4;
+    /* 倫倫主色：沉穩明亮的藍（跟預休的粉色系區隔） */
+    --bg: #F4F8FD;
     --card: #FFFFFF;
-    --ink: #4A3F3B;
-    --ink-soft: #8A7C76;
-    --accent: #E9A0A8;
-    --accent-dark: #C97882;
-    --accent-soft: #FBE3E6;
-    --line: #F1E4DF;
-    --today-ring: #E9A0A8;
+    --ink: #34465E;
+    --ink-soft: #7688A0;
+    --ink-faint: #A9B7C8;
+    --accent: #7FA8DC;
+    --accent-dark: #4A78B5;
+    --accent-soft: #E3EDF9;
+    --line: #E2EAF4;
+    --today-ring: #4A78B5;
+    --cell: #F1F5FB;
+    --chip: #EDF2F8;
+    --disabled: #C9D4E2;
     --warn: #D9762F;
     --warn-bg: #FDEEE0;
     --err: #C9575A;
     --err-bg: #FBE7E6;
     --ok: #4C8C6B;
 
-    /* 班別／假別配色：早班暖黃、晚班紫（跟「晚」對應），假別沿用預休頁色系 */
-    --c-早: #FFEAD1;  --t-早: #9A6318;
-    --c-晚: #DFDAF6;  --t-晚: #4C3E96;
-    --c-休假: #A9DCE0;  --t-休假: #1F5A5F;
-    --c-特休: #F6C6C9;  --t-特休: #8A3B3F;
-    --c-其他: #FCE29B;  --t-其他: #7A5B12;
+    /* 休假／請假：紅色系（跟上班班別明顯區分） */
+    --c-休假: #F9D6D6;  --t-休假: #A13A3A;
+    --c-特休: #F4BDBD;  --t-特休: #8E2E2E;
+    --c-其他: #EDA3A3;  --t-其他: #6E1C1C;
+
+    /* 班別：每組一個色系，組內由淺到深，含「(晚)」的最深 */
+    --s-暗8-1: #ECE6F8;  --s-暗8-1t: #5B4A8C;   /* 暗8H 紫 */
+    --s-暗8-2: #D3C7EF;  --s-暗8-2t: #46377A;
+    --s-暗8-3: #7D69B8;  --s-暗8-3t: #FFFFFF;
+    --s-明10-1: #E2F2E5; --s-明10-1t: #3B6A46;  /* 明10H 綠 */
+    --s-明10-2: #BFE1C7; --s-明10-2t: #2C5535;
+    --s-明10-3: #4F8F60; --s-明10-3t: #FFFFFF;
+    --s-暗10-1: #FDEAD6; --s-暗10-1t: #99591C;  /* 暗10H 橘 */
+    --s-暗10-2: #F8CFA6; --s-暗10-2t: #7E4410;
+    --s-暗10-3: #C9702F; --s-暗10-3t: #FFFFFF;
+    --s-吃-1: #D7E6F8;   --s-吃-1t: #2E5B8E;    /* 暗10吃 藍 */
+    --s-吃-3: #4A7DBD;   --s-吃-3t: #FFFFFF;
   }
 
   *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
   body{
     margin:0;
-    background: linear-gradient(180deg, #FFF1EC 0%, #FFF8F4 220px, #FFF8F4 100%);
+    background: linear-gradient(180deg, #E6F0FB 0%, #F4F8FD 220px, #F4F8FD 100%);
     color: var(--ink);
     font-family: "JinXuan", -apple-system, "PingFang TC", sans-serif;
     padding-top: calc(56px + env(safe-area-inset-top));
@@ -51,7 +67,7 @@
 
   /* 動態內容用系統字型，不用金萱瘦身字型：員工姓名、館別名稱（來自後端名單）
      ——這些是不固定的文字，瘦身字型可能沒包含用到的字。 */
-  #greetName, #meta, .loc-chip, .cell-text, .day-row .txt{
+  #greetName, #meta, .loc-chip, .cell-text, .sum-dates .loc{
     font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
   }
 
@@ -66,11 +82,11 @@
     position: fixed;
     top: 0; left: 0; right: 0;
     z-index: 30;
-    background: rgba(255, 248, 244, 0.94);
+    background: rgba(244, 248, 253, 0.94);
     backdrop-filter: saturate(1.6) blur(10px);
     -webkit-backdrop-filter: saturate(1.6) blur(10px);
     border-bottom: 1px solid var(--line);
-    box-shadow: 0 2px 12px rgba(180, 130, 120, 0.10);
+    box-shadow: 0 2px 12px rgba(74, 120, 181, 0.10);
     padding-top: env(safe-area-inset-top);
   }
   .topbar-inner{
@@ -131,7 +147,7 @@
     border-radius: 20px;
     padding: 16px;
     margin-bottom: 16px;
-    box-shadow: 0 6px 20px rgba(180, 130, 120, 0.08);
+    box-shadow: 0 6px 20px rgba(74, 120, 181, 0.08);
   }
 
   .greet{
@@ -180,7 +196,7 @@
     font-size: 14px;
     padding: 12px 26px;
     border-radius: 999px;
-    box-shadow: 0 6px 16px rgba(201, 120, 130, 0.32);
+    box-shadow: 0 6px 16px rgba(74, 120, 181, 0.32);
   }
 
   .month-nav{
@@ -216,6 +232,12 @@
     gap: 5px;
     font-size: 12px;
     color: var(--ink-soft);
+  }
+  .legend-note{
+    text-align: center;
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin: -4px 0 10px;
   }
   .legend-dot{
     width: 10px; height: 10px;
@@ -258,7 +280,7 @@
     justify-content:center;
     gap: 1px;
     border-radius: 12px;
-    background: #FBF6F3;
+    background: var(--cell);
     color: var(--ink);
     cursor: pointer;
     user-select: none;
@@ -267,7 +289,7 @@
   }
   .day-cell.other-month{
     background: transparent;
-    color: #DCD0CB;
+    color: var(--ink-faint);
     cursor: default;
   }
   .day-cell.today{ box-shadow: inset 0 0 0 2px var(--today-ring); }
@@ -298,6 +320,9 @@
     line-height: 1;
   }
   .day-cell .sat{ color: #6E86B8; }
+  /* 排了班的格子：日期數字跟著班別文字色，週末顏色不蓋過（深色格子才看得到） */
+  .day-cell.has-entry .num.sat,
+  .day-cell.has-entry .num.sun-day{ color: inherit; }
   .day-cell .sun-day{ color: var(--err); }
 
   .summary-row{
@@ -312,7 +337,7 @@
     border-radius: 14px;
     font-size: 12px;
     font-weight: 700;
-    background: #FBF6F3;
+    background: var(--cell);
     color: var(--ink-soft);
   }
   .summary-pill .n{
@@ -393,7 +418,7 @@
   .overlay{
     position: fixed;
     inset: 0;
-    background: rgba(60, 45, 40, 0.35);
+    background: rgba(30, 45, 70, 0.35);
     display:flex;
     align-items:flex-end;
     justify-content:center;
@@ -429,46 +454,11 @@
     margin: 0 0 16px;
   }
 
-  .seg{
-    display:flex;
-    background: var(--accent-soft);
-    border-radius: 999px;
-    padding: 4px;
-    margin-bottom: 16px;
-    gap: 4px;
-  }
-  .seg button{
-    flex:1;
-    border:none;
-    background: transparent;
-    color: var(--accent-dark);
-    font-weight: 700;
-    font-size: 13px;
-    padding: 11px 6px;
-    border-radius: 999px;
-  }
-  .seg button.active{ background: var(--accent-dark); color: #fff; }
 
-  .field-label{
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--ink-soft);
-    margin: 0 0 8px;
-  }
-  .field-label .hint{
-    font-weight: 600;
-    color: #B7A9A3;
-  }
 
-  .chip-row{
-    display:flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
   .loc-chip{
     border: none;
-    background: #F3EEEC;
+    background: var(--chip);
     color: var(--ink-soft);
     font-weight: 700;
     font-size: 14px;
@@ -480,42 +470,6 @@
     color: #fff;
   }
 
-  .shift-group{ margin-bottom: 14px; }
-  .shift-group .gname{
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--ink-soft);
-    margin-bottom: 7px;
-  }
-  .shift-list{
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-  .shift-btn{
-    border: none;
-    border-radius: 14px;
-    padding: 13px 8px;
-    font-size: 13px;
-    font-weight: 700;
-    text-align: center;
-    position: relative;
-    line-height: 1.35;
-  }
-  .shift-btn .when{
-    display: block;
-    font-size: 10px;
-    font-weight: 700;
-    opacity: 0.8;
-    margin-top: 2px;
-  }
-  .shift-btn.selected{ box-shadow: inset 0 0 0 3px rgba(0,0,0,0.18); }
-  .shift-btn.selected::after{
-    content: "✓";
-    position: absolute;
-    top: 4px; right: 8px;
-    font-size: 11px;
-  }
 
   .type-grid{
     display:grid;
@@ -554,9 +508,9 @@
     font-size: 16px;
     padding: 15px;
     border-radius: 16px;
-    box-shadow: 0 8px 18px rgba(201, 120, 130, 0.35);
+    box-shadow: 0 8px 18px rgba(74, 120, 181, 0.32);
   }
-  .btn-primary:disabled{ background: #D8CFCB; box-shadow: none; }
+  .btn-primary:disabled{ background: var(--disabled); box-shadow: none; }
   .btn-primary:active:not(:disabled){ background: var(--accent); }
   .btn-danger{
     border: none;
@@ -571,7 +525,7 @@
   .btn-danger:disabled{ opacity: 0.5; }
   .btn-close{
     border: none;
-    background: #F3EEEC;
+    background: var(--chip);
     color: var(--ink-soft);
     font-weight: 600;
     padding: 13px;
@@ -599,6 +553,556 @@
   }
   .toast.show{ opacity: 1; transform: translate(-50%, 0); }
   .toast.error{ background: var(--err); }
+
+  /* ---- 分頁切換：我的排班 ↔ 館別總覽 ---- */
+  .page-toggle{
+    display:flex;
+    background: var(--accent-soft);
+    border-radius: 999px;
+    padding: 4px;
+    margin-bottom: 16px;
+    gap: 4px;
+  }
+  .page-toggle-btn{
+    flex:1;
+    border:none;
+    background: transparent;
+    color: var(--accent-dark);
+    font-weight: 700;
+    font-size: 13px;
+    padding: 11px 6px;
+    border-radius: 999px;
+  }
+  .page-toggle-btn.active{ background: var(--accent-dark); color: #fff; }
+
+  /* ---- 管理員代排：選員工 ---- */
+  .admin-pick{ margin-top: 12px; }
+  .admin-pick label, .ov-label{
+    display:block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .pretty-select{
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--accent-soft) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234A78B5'><path d='M7 10l5 5 5-5z'/></svg>") no-repeat right 12px center;
+    background-size: 16px;
+    border: none;
+    border-radius: 14px;
+    padding: 12px 36px 12px 14px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent-dark);
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+  .proxy-note{
+    margin: 10px 0 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent-dark);
+    background: var(--accent-soft);
+    border-radius: 10px;
+    padding: 8px 10px;
+    line-height: 1.6;
+  }
+  .proxy-note .who{ font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; }
+
+  /* ---- 鎖定 ---- */
+  .lock-hint{
+    text-align:center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--warn);
+    background: var(--warn-bg);
+    border-radius: 10px;
+    padding: 7px 10px;
+    margin-bottom: 10px;
+  }
+  .lock-hint.admin{ color: var(--accent-dark); background: var(--accent-soft); }
+  .day-cell.locked::after{
+    content: "🔒";
+    position: absolute;
+    bottom: 1px; right: 2px;
+    font-size: 8px;
+    line-height: 1;
+  }
+
+  /* ---- 館別總覽 ---- */
+  .ov-chips{ display:flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+  .ov-chips .loc-chip{ padding: 9px 14px; font-size: 13px; }
+  .ov-date-nav{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+  }
+  .ov-date-nav button{
+    width: 40px; height: 40px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: none;
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    font-size: 18px;
+  }
+  .ov-date-nav button:active{ background: var(--accent); color:#fff; }
+  .ov-date-nav input[type=date]{
+    flex: 1;
+    min-width: 0;
+    border: none;
+    border-radius: 14px;
+    background: var(--cell);
+    color: var(--ink);
+    font-size: 16px;
+    font-weight: 700;
+    padding: 10px 12px;
+    font-family: inherit;
+    text-align: center;
+  }
+  .ov-weekday{
+    text-align:center;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+  .ov-head{
+    display:flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .ov-head .t{ font-size: 15px; font-weight: 700; }
+  .ov-count{
+    text-align: right;
+  }
+  .ov-count .n{
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--ok);
+    line-height: 1.1;
+  }
+  .ov-count .cap{
+    font-size: 11px;
+    color: var(--ink-soft);
+    font-weight: 700;
+  }
+  .ov-count.over .n{ color: var(--err); }
+  .ov-alert{
+    background: var(--err-bg);
+    color: var(--err);
+    font-weight: 700;
+    font-size: 13px;
+    border-radius: 12px;
+    padding: 9px 12px;
+    margin: 6px 0 8px;
+    text-align: center;
+  }
+  .ov-row{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 11px 4px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+  }
+  .ov-row:last-child{ border-bottom: none; }
+  .ov-row .nm{
+    font-weight: 700;
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+
+  /* ============ 刷班模式 ============ */
+  .brush-title{
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0 0 10px;
+  }
+  .brush-title .step{
+    display: inline-block;
+    min-width: 18px;
+    height: 18px;
+    line-height: 18px;
+    text-align: center;
+    border-radius: 50%;
+    background: var(--accent-dark);
+    color: #fff;
+    font-size: 11px;
+    margin-right: 4px;
+  }
+  .brush-grid{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .brush-btn{
+    border: none;
+    border-radius: 12px;
+    padding: 9px 4px 8px;
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: 1.25;
+    position: relative;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .brush-btn .when{
+    display: block;
+    font-size: 10.5px;
+    opacity: 0.85;
+    margin-top: 1px;
+  }
+  /* 選取中：外圈雙框＋打勾＋微微浮起，一眼看出現在刷的是哪個 */
+  .brush-btn.active{
+    box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--ink);
+    transform: translateY(-2px);
+  }
+  .brush-btn.active::after{
+    content: "✓";
+    position: absolute;
+    top: 3px; right: 6px;
+    font-size: 11px;
+  }
+  .leave-entry{
+    width: 100%;
+    margin-top: 10px;
+    border: none;
+    border-radius: 12px;
+    padding: 11px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    background: #fff;
+    color: var(--t-特休);
+    box-shadow: inset 0 0 0 2px var(--c-其他);
+    position: relative;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .leave-entry .small{
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.85;
+  }
+  .leave-entry.active{
+    background: var(--c-休假);
+    box-shadow: inset 0 0 0 2px var(--c-其他), 0 0 0 3px #fff, 0 0 0 5px var(--ink);
+    transform: translateY(-2px);
+  }
+  .leave-entry.active::after{
+    content: "✓";
+    position: absolute;
+    top: 4px; right: 10px;
+    font-size: 11px;
+  }
+  .brush-loc{
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .brush-loc .lbl{
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin-right: 2px;
+  }
+  .brush-loc .loc-chip{ padding: 7px 14px; font-size: 13px; }
+  .brush-status{
+    margin-top: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.55;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+  }
+  .brush-status.idle{ background: var(--chip); color: var(--ink-soft); }
+  /* 往下點月曆時，「選取中」這條黏在標題列下面，隨時看得到正在刷什麼 */
+  .brush-status{
+    position: sticky;
+    top: calc(62px + env(safe-area-inset-top));
+    z-index: 15;
+    box-shadow: 0 4px 12px rgba(74, 120, 181, 0.12);
+  }
+  .brush-divider{
+    border: none;
+    border-top: 1px dashed var(--line);
+    margin: 16px 0 14px;
+  }
+
+  /* 還沒儲存的格子：虛線框 */
+  .day-cell.pending{
+    outline: 2px dashed var(--accent-dark);
+    outline-offset: -2px;
+  }
+  .day-cell .sent-mark{
+    position: absolute;
+    bottom: 1px; left: 3px;
+    font-size: 8px;
+    line-height: 1;
+  }
+
+  /* ============ 儲存列（有未儲存變更才出現） ============ */
+  .save-bar{
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(244,248,253,0) 0%, #F4F8FD 32%);
+    z-index: 40;
+    display: none;
+  }
+  .save-bar.show{ display: block; }
+  .save-bar .inner{
+    max-width: 460px;
+    margin: 0 auto;
+    display: flex;
+    gap: 8px;
+  }
+  .save-bar .btn-primary{ flex: 1; }
+  .btn-discard{
+    border: none;
+    background: #fff;
+    color: var(--ink-soft);
+    font-weight: 700;
+    font-size: 13px;
+    border-radius: 16px;
+    padding: 0 14px;
+    box-shadow: inset 0 0 0 1.5px var(--line);
+    white-space: nowrap;
+  }
+  .btn-discard.confirming{ background: var(--err-bg); color: var(--err); box-shadow: none; }
+  body.has-save-bar{ padding-bottom: 100px; }
+  body.has-save-bar .toast{ bottom: 100px; }
+
+  /* ============ 本月已排：依項目統整 ============ */
+  .sum-sec{
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin: 12px 0 2px;
+  }
+  .sum-sec:first-child{ margin-top: 0; }
+  .sum-row{
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 2px;
+    border-bottom: 1px solid var(--line);
+  }
+  .sum-row:last-child{ border-bottom: none; }
+  .sum-row .pill{ flex-shrink: 0; min-width: 0; }
+  .sum-row .cnt{
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    padding-top: 6px;
+  }
+  .sum-dates{
+    flex: 1;
+    font-size: 13.5px;
+    font-weight: 700;
+    line-height: 1.75;
+    padding-top: 2px;
+    word-break: break-word;
+  }
+  .sum-dates .dt.pend{
+    text-decoration: underline dashed var(--accent-dark);
+    text-underline-offset: 3px;
+  }
+  .sum-dates .dt .loc{
+    font-size: 11px;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+  .sum-dates .dt .sent{
+    font-size: 11px;
+    color: var(--ok);
+  }
+
+  /* ============ 送請假（流程跟預休一樣） ============ */
+  .send-wrap{
+    text-align: center;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--line);
+  }
+  .btn-send{
+    border: none;
+    background: #fff;
+    color: var(--t-特休);
+    font-weight: 700;
+    font-size: 14px;
+    padding: 12px 28px;
+    border-radius: 999px;
+    box-shadow: inset 0 0 0 2px var(--c-其他);
+  }
+  .btn-send:active{ background: var(--c-休假); }
+  .send-hint{
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin: 8px 0 0;
+    line-height: 1.6;
+  }
+
+  .pick-row{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .pick-row:last-child{ border-bottom: none; }
+  .pick-row input[type=checkbox]{
+    width: 20px; height: 20px;
+    accent-color: var(--accent-dark);
+    flex-shrink: 0;
+  }
+  .pick-date{ flex: 1; font-weight: 600; }
+
+  .review-row{
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .rr-top{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .rr-date{ font-weight: 700; font-size: 14px; }
+  .rr-badge{
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  select.rr-subtype{
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--cell) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%237688A0'><path d='M7 10l5 5 5-5z'/></svg>") no-repeat right 10px center;
+    background-size: 16px;
+    font-size: 14px;
+    color: var(--ink);
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .rr-photo{ margin-top: 8px; }
+  .rr-photo-label{
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: block;
+  }
+  .rr-photo input[type=file]{ font-size: 12px; width: 100%; }
+  .rr-photo-preview{
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+  .rr-photo-preview img{
+    width: 44px; height: 44px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+  }
+  .rr-warn{
+    margin-top: 8px;
+    background: var(--warn-bg);
+    color: var(--warn);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 8px 10px;
+    border-radius: 10px;
+    line-height: 1.5;
+  }
+  .reason-block{ margin: 4px 0 10px; }
+  .reason-block label{
+    font-size: 12px;
+    color: var(--ink-soft);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .reason-block textarea{
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 14px;
+    resize: vertical;
+    color: var(--ink);
+    font-family: -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  }
+  .hint-text{
+    font-size: 11px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    text-align: center;
+    margin: 4px 0;
+  }
+  .result-row{
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .result-row:last-child{ border-bottom: none; }
+  .result-row-top{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .result-status{
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .rs-pending{ background: var(--chip); color: var(--ink-soft); }
+  .rs-ok{ background: #E4F3EA; color: var(--ok); }
+  .rs-fail{ background: var(--err-bg); color: var(--err); }
+  .rs-warn{ background: var(--warn-bg); color: var(--warn); }
+  .btn-retry-sm{
+    border: none;
+    background: var(--err);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 999px;
+  }
+  .result-row-note{
+    font-size: 11px;
+    color: var(--warn);
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+  #resultSummary{
+    text-align: center;
+    font-weight: 700;
+    margin-top: 12px;
+    line-height: 1.6;
+    white-space: pre-line;
+  }
 </style>
 </head>
 <body>
@@ -626,18 +1130,40 @@
     <a class="btn-portal" href="https://siting-lunlun-care.github.io/portal/">前往入口 ›</a>
   </div>
 
-  <!-- 身分卡：哈囉 〇〇 ＋ 班別/館別資訊 -->
+  <!-- 分頁切換 -->
+  <div class="page-toggle" id="pageToggle" style="display:none;">
+    <button type="button" class="page-toggle-btn active" id="tabMineBtn">我的排班</button>
+    <button type="button" class="page-toggle-btn" id="tabOverviewBtn">館別總覽</button>
+  </div>
+
+  <!-- ============ 分頁一：我的排班（管理員：代排班） ============ -->
+  <div id="minePage">
+
+  <!-- 身分卡：哈囉 〇〇 ＋ 班別/館別資訊；管理員多一個「選擇員工」 -->
   <div class="card" id="meCard" style="display:none;">
     <p class="greet">哈囉 <span id="greetName"></span></p>
     <p class="meta" id="meta"></p>
+    <div class="admin-pick" id="adminPick" style="display:none;">
+      <label for="empSelect">選擇員工（代排）</label>
+      <select class="pretty-select" id="empSelect"><option value="">請選擇倫倫員工</option></select>
+      <p class="proxy-note" id="proxyNote" style="display:none;"></p>
+    </div>
     <div class="load-error" id="loadError" style="display:none;">
       <p id="loadErrorMsg">載入名單失敗，請檢查網路後再試一次。</p>
       <button type="button" class="btn-retry" id="retryBtn">重新載入</button>
     </div>
   </div>
 
-  <!-- 月曆 -->
+  <!-- 刷班面板＋月曆 -->
   <div class="card" id="calCard" style="display:none;">
+    <p class="brush-title"><span class="step">1</span>先選要刷的項目　<span class="step">2</span>再點日期</p>
+    <div class="brush-grid" id="brushGrid"></div>
+    <button type="button" class="leave-entry" id="leaveEntryBtn">📝 請假<span class="small">（特休、事假、病假…：點日期再選假別）</span></button>
+    <div class="brush-loc" id="brushLocRow" style="display:none;"></div>
+    <div class="brush-status idle" id="brushStatus">還沒選項目：先點上面的班別、休假或請假</div>
+
+    <hr class="brush-divider">
+
     <div class="month-nav">
       <button type="button" id="prevMonthBtn" aria-label="上個月">‹</button>
       <h2 id="monthLabel">—</h2>
@@ -645,13 +1171,15 @@
     </div>
 
     <div class="legend">
-      <span class="legend-item"><span class="legend-dot" style="background:var(--c-早)"></span>早班</span>
-      <span class="legend-item"><span class="legend-dot" style="background:var(--c-晚)"></span>晚班 🌙</span>
-      <span class="legend-item"><span class="legend-dot" style="background:var(--c-休假)"></span>休假</span>
-      <span class="legend-item"><span class="legend-dot" style="background:var(--c-特休)"></span>特休</span>
-      <span class="legend-item"><span class="legend-dot" style="background:var(--c-其他)"></span>其他假</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--s-暗8-3)"></span>暗8H</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--s-明10-3)"></span>明10H</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--s-暗10-3)"></span>暗10H</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--s-吃-3)"></span>暗10吃</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--c-特休)"></span>休假／請假</span>
     </div>
+    <div class="legend-note">同色越深＝越晚上班，最深 🌙 是晚班｜虛線框＝還沒儲存｜📨＝已送請假</div>
 
+    <div class="lock-hint" id="lockHint" style="display:none;"></div>
     <div class="loading-hint" id="calLoading" style="display:none;">載入排班中…</div>
 
     <div class="weekday-row">
@@ -666,45 +1194,115 @@
       <div class="summary-pill">休假／請假<span class="n" id="cntLeave">0</span></div>
     </div>
 
-    <p class="footnote">點一下日期就能排班；已排的日期再點一次可以修改或刪除。</p>
+    <p class="footnote">刷到已排的日期會覆蓋；同一天用同一個項目再點一次＝取消。<br>排完記得按下方「儲存」。</p>
   </div>
 
-  <!-- 本月清單 -->
+  <!-- 本月已排（依項目統整）＋送請假 -->
   <div class="card" id="listCard" style="display:none;">
     <h3 class="section-title">📋 本月已排</h3>
-    <div class="day-list" id="dayList"></div>
+    <div id="sumList"></div>
+    <div class="send-wrap">
+      <button type="button" class="btn-send" id="sendLeaveBtn">📨 送請假申請</button>
+      <p class="send-hint">特休、事假、病假等請假類要送請假系統給主管審核；休假不用送。</p>
+    </div>
+  </div>
+
+  </div>
+
+  <!-- ============ 分頁二：館別總覽 ============ -->
+  <div id="overviewPage" style="display:none;">
+    <div class="card">
+      <span class="ov-label">館別</span>
+      <div class="ov-chips" id="ovLocRow"></div>
+      <span class="ov-label">日期</span>
+      <div class="ov-date-nav">
+        <button type="button" id="ovPrevBtn" aria-label="前一天">‹</button>
+        <input type="date" id="ovDate">
+        <button type="button" id="ovNextBtn" aria-label="後一天">›</button>
+      </div>
+      <div class="ov-weekday" id="ovWeekday"></div>
+    </div>
+
+    <div class="card" id="ovResultCard">
+      <div class="ov-head">
+        <div class="t" id="ovTitle">—</div>
+        <div class="ov-count" id="ovCount">
+          <div class="n" id="ovCountNum">– / –</div>
+          <div class="cap">上班人數 / 房間數</div>
+        </div>
+      </div>
+      <div class="ov-alert" id="ovAlert" style="display:none;"></div>
+      <div class="loading-hint" id="ovLoading" style="display:none;">載入全部排班中…</div>
+      <div id="ovList"></div>
+    </div>
   </div>
 
 </div>
 
-<!-- 單日排班選單 -->
-<div class="overlay" id="dayOverlay">
+<!-- 儲存列：有還沒儲存的變更才出現 -->
+<div class="save-bar" id="saveBar">
+  <div class="inner">
+    <button type="button" class="btn-discard" id="discardBtn">放棄</button>
+    <button type="button" class="btn-primary" id="saveAllBtn">儲存</button>
+  </div>
+</div>
+
+<!-- 請假類選單：選了「請假」後點日期跳出 -->
+<div class="overlay" id="leaveOverlay">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <h3 id="sheetDate">—</h3>
-    <p class="sub" id="sheetSub">選擇這天要上班還是休假</p>
-
-    <div class="seg">
-      <button type="button" id="segWorkBtn" class="active">上班</button>
-      <button type="button" id="segLeaveBtn">休假／請假</button>
-    </div>
-
-    <div id="workPane">
-      <p class="field-label">這天在哪個館</p>
-      <div class="chip-row" id="locRow"></div>
-      <p class="field-label">班別 <span class="hint" id="shiftHint"></span></p>
-      <div id="shiftGroups"></div>
-    </div>
-
-    <div id="leavePane" style="display:none;">
-      <p class="field-label">假別</p>
-      <div class="type-grid" id="leaveGrid"></div>
-    </div>
-
+    <h3 id="leaveSheetDate">—</h3>
+    <p class="sub" id="leaveSheetSub">選這天的假別</p>
+    <div class="type-grid" id="leaveGrid"></div>
     <div class="sheet-actions">
-      <button type="button" class="btn-primary" id="saveDayBtn" disabled>存這天</button>
-      <button type="button" class="btn-danger" id="delDayBtn" style="display:none;">刪除這天</button>
-      <button type="button" class="btn-close" id="closeSheetBtn">關閉</button>
+      <button type="button" class="btn-danger" id="leaveClearBtn" style="display:none;">清除這天</button>
+      <button type="button" class="btn-close" id="leaveCloseBtn">關閉</button>
+    </div>
+  </div>
+</div>
+
+<!-- 送請假：勾選要送出的日期 -->
+<div class="overlay" id="pickOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3>選擇要送出的日期</h3>
+    <p class="sub">勾選這次要送出的請假</p>
+    <div id="pickList"></div>
+    <div class="sheet-actions">
+      <button type="button" class="btn-primary" id="pickNextBtn" disabled>下一步</button>
+      <button type="button" class="btn-close" id="pickCloseBtn">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 送請假：確認送出 -->
+<div class="overlay" id="reviewOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3>確認送請假系統</h3>
+    <p class="sub" id="reviewSub">請確認以下日期與假別</p>
+    <div id="reviewList"></div>
+    <div class="reason-block">
+      <label for="reasonInput">備註（選填）</label>
+      <textarea id="reasonInput" rows="2" placeholder="可補充說明，不填也可以"></textarea>
+    </div>
+    <p class="hint-text">病假、事假可以附上證明照片，不附也能送出，但記得之後到 LINE 補傳給行政。</p>
+    <div class="sheet-actions">
+      <button type="button" class="btn-primary" id="confirmSendBtn" disabled>確認送出</button>
+      <button type="button" class="btn-close" id="reviewCloseBtn">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 送請假：結果 -->
+<div class="overlay" id="resultOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3>送出結果</h3>
+    <div id="resultList"></div>
+    <p id="resultSummary"></p>
+    <div class="sheet-actions">
+      <button type="button" class="btn-primary" id="resultDoneBtn" style="display:none;">完成</button>
     </div>
   </div>
 </div>
@@ -721,44 +1319,54 @@
 
   // 排班系統（存、讀、刪排班）
   var SCHEDULE_GAS_URL = "https://script.google.com/macros/s/AKfycbyX_tGPVV_RRZfX2Lx6V7oKIcUbYqxlBPASgVyWklwk28Llm4yfF3serYLVsOvF63koYg/exec";
-  // 請假系統（只拿名單：姓名／userId／dept／area／shift／shiftType）
-  var ROSTER_GAS_URL = "https://script.google.com/macros/s/AKfycbzitK29DxZdY8GKoWudHUXA8RBFHQBLQ7DUWuJeulM-zLkl7iMRvFYROThJgLVa9oDy/exec";
+  // 請假系統（拿名單：姓名／userId／dept／area／shift／shiftType；也收正式請假單）
+  var LEAVE_GAS_URL = "https://script.google.com/macros/s/AKfycbzitK29DxZdY8GKoWudHUXA8RBFHQBLQ7DUWuJeulM-zLkl7iMRvFYROThJgLVa9oDy/exec";
 
   var WEEKDAY_ZH = ["日","一","二","三","四","五","六"];
 
   // 班別目錄：name 就是存到後端的「內容」，含「(晚)」的自動算晚班。
-  // short/when 只是月曆格子上的縮寫顯示，不影響存檔內容。
+  // short/when 只是畫面上的縮寫顯示；tone 對應 CSS 的班別顏色（組別＋深淺）。
   var SHIFT_GROUPS = {
     "暗8": {
       label: "暗 8H",
       items: [
-        { name: "暗8H-0900(早)", short: "暗8H", when: "0900" },
-        { name: "暗8H-1000(早)", short: "暗8H", when: "1000" },
-        { name: "暗8H-1200(晚)", short: "暗8H", when: "1200" }
+        { tone: "暗8-1", name: "暗8H-0900(早)", short: "暗8H", when: "0900" },
+        { tone: "暗8-2", name: "暗8H-1000(早)", short: "暗8H", when: "1000" },
+        { tone: "暗8-3", name: "暗8H-1200(晚)", short: "暗8H", when: "1200" }
       ]
     },
     "暗10": {
       label: "暗 10H／暗 10 吃",
       items: [
-        { name: "暗10H-0930(早)", short: "暗10H", when: "0930" },
-        { name: "暗10H-1000(早)", short: "暗10H", when: "1000" },
-        { name: "暗10H-1030(晚)", short: "暗10H", when: "1030" },
-        { name: "暗10吃-0930(早)", short: "暗10吃", when: "0930" },
-        { name: "暗10吃-1000(晚)", short: "暗10吃", when: "1000" }
+        { tone: "暗10-1", name: "暗10H-0930(早)", short: "暗10H", when: "0930" },
+        { tone: "暗10-2", name: "暗10H-1000(早)", short: "暗10H", when: "1000" },
+        { tone: "暗10-3", name: "暗10H-1030(晚)", short: "暗10H", when: "1030" },
+        { tone: "吃-1", name: "暗10吃-0930(早)", short: "暗10吃", when: "0930" },
+        { tone: "吃-3", name: "暗10吃-1000(晚)", short: "暗10吃", when: "1000" }
       ]
     },
     "明10": {
       label: "明 10H",
       items: [
-        { name: "明10H-0900(早)", short: "明10H", when: "0900" },
-        { name: "明10H-0930(早)", short: "明10H", when: "0930" },
-        { name: "明10H-1000(晚)", short: "明10H", when: "1000" }
+        { tone: "明10-1", name: "明10H-0900(早)", short: "明10H", when: "0900" },
+        { tone: "明10-2", name: "明10H-0930(早)", short: "明10H", when: "0930" },
+        { tone: "明10-3", name: "明10H-1000(晚)", short: "明10H", when: "1000" }
       ]
     }
   };
 
-  // 假別；分三類上色（休假／特休／其他）
+  // 館別總覽：固定館別清單＋各館倫倫房間數
+  var LOCATIONS = ["板新", "板橋", "東門", "復興", "桃園", "新竹", "台中"];
+  var ROOMS = { "板新": 1, "板橋": 2, "東門": 5, "復興": 5, "桃園": 2, "新竹": 2, "台中": 4 };
+
+  // 非上班項目：「休假」（例假）在刷班項目裡；其他是「請假類」，點日期再選，要送請假系統
   var LEAVE_TYPES = ["休假", "特休", "事假", "病假", "喪假", "婚假", "產假", "產檢假", "育嬰假"];
+  var REQUEST_TYPES = LEAVE_TYPES.slice(1);
+  var PHOTO_OPTIONAL_TYPES = ["事假", "病假"];
+  var SENT_STATUS = "已送請假";
+  var LEAVE_BRUSH = "__請假__"; // 刷班項目裡代表「請假」入口的特殊值
+
+  function isLeave(content){ return LEAVE_TYPES.indexOf(content) !== -1; }
   function leaveCategory(t){
     if (t === "休假") return "休假";
     if (t === "特休") return "特休";
@@ -768,7 +1376,13 @@
   function pad(n){ return n < 10 ? "0" + n : "" + n; }
   function isoDate(y, m, d){ return y + "-" + pad(m+1) + "-" + pad(d); }
   function monthKey(y, m){ return y + "-" + pad(m+1); }
-  function isNightShift(name){ return name.indexOf("(晚)") !== -1; }
+  function isNightShift(name){ return String(name || "").indexOf("(晚)") !== -1; }
+  function shortDate(dateStr){ var p = dateStr.split("-"); return (+p[1]) + "/" + (+p[2]); }
+  function formatDateLabel(dateStr){
+    var p = dateStr.split("-");
+    var d = new Date(+p[0], +p[1]-1, +p[2]);
+    return (+p[1]) + "/" + (+p[2]) + "（" + WEEKDAY_ZH[d.getDay()] + "）";
+  }
 
   // 從網址讀入口頁帶過來的 ?uid=...：手動解析＋decodeURIComponent，
   // 不用 URLSearchParams 是為了避免重複解碼（跟預休頁同一套寫法）。
@@ -834,13 +1448,25 @@
     return true;
   }
 
+  // 請假系統：SUCCESS 或 DUPLICATE（同一天已經送過）都算成功，跟預休一樣
+  function isLeaveSendSuccess(result){
+    if (!result || result.networkError || !result.httpOk) return false;
+    var d = result.data;
+    if (d && typeof d === "object"){
+      if (d.result === "SUCCESS" || d.result === "DUPLICATE") return true;
+      if (d.result === "ERROR") return false;
+      if (d.success === false) return false;
+      if (d.error) return false;
+    }
+    return true;
+  }
+
   function errorText(result){
     if (!result) return "未知錯誤";
-    if (result.networkError) return "連不到伺服器";
+    if (result.networkError) return "網路連線失敗";
     var d = result.data;
     if (d && typeof d === "object" && (d.message || d.error)) return String(d.message || d.error);
-    if (!result.httpOk) return "HTTP " + result.status;
-    return "存檔失敗";
+    return "HTTP " + result.status;
   }
 
   // ---- 小提示 toast ----
@@ -858,51 +1484,54 @@
   // ============================================================
   var now = new Date();
   var state = {
-    me: null,            // { name, userId, dept, areas:[], shift, shiftType }
+    viewer: null,        // 從入口進來的人自己（管理員代排時跟 me 不同）
+    isAdmin: false,      // 名單 dept=管理員 → 可代排、不受鎖定限制
+    roster: [],          // 整份名單（總覽用 userId 補姓名）
+    tab: "mine",         // "mine" | "overview"
+    me: null,            // 「正在排誰的班」：一般員工=自己；管理員=選到的員工
+                         // { name, userId, dept, areas:[], shift, shiftType }
     groups: [],          // 這個人可以選的班別群組 key，第一個是主要群組
+    loadToken: 0,        // 切月份／換員工時，丟掉晚到的舊回應
     viewYear: now.getFullYear(),
     viewMonth: now.getMonth(),
-    data: {},            // { "YYYY-MM-DD": { content, location, isNight, kind:"work"|"leave" } }
+    data: {},            // 後端已存的：{ "YYYY-MM-DD": { content, location, status } }
+    pending: {},         // 還沒儲存的變更：{ "YYYY-MM-DD": {content, location} 或 null(要刪) }
     loadedMonth: null,
-    sheetDate: null,
-    sheetMode: "work",   // "work" | "leave"
-    pickLoc: null,
-    pickShift: null,
-    pickLeave: null,
-    busy: false
+    brush: null,         // 目前刷的項目：班別名稱／"休假"／LEAVE_BRUSH／null
+    brushLoc: null,      // 刷上班時排到哪個館
+    saving: false,
+    leaveDate: null,     // 請假選單目前開的日期
+    ovLoc: null,
+    ovDate: null,
+    ovCache: {}          // { "YYYY-MM": rows[] }，館別總覽整月資料
   };
 
+  function $(id){ return document.getElementById(id); }
   var el = {
-    noUidCard: document.getElementById("noUidCard"),
-    noUidTitle: document.getElementById("noUidTitle"),
-    noUidMsg: document.getElementById("noUidMsg"),
-    meCard: document.getElementById("meCard"),
-    calCard: document.getElementById("calCard"),
-    listCard: document.getElementById("listCard"),
-    greetName: document.getElementById("greetName"),
-    meta: document.getElementById("meta"),
-    loadError: document.getElementById("loadError"),
-    loadErrorMsg: document.getElementById("loadErrorMsg"),
-    calLoading: document.getElementById("calLoading"),
-    grid: document.getElementById("calendarGrid"),
-    monthLabel: document.getElementById("monthLabel"),
-    dayList: document.getElementById("dayList"),
-    overlay: document.getElementById("dayOverlay"),
-    sheetDate: document.getElementById("sheetDate"),
-    sheetSub: document.getElementById("sheetSub"),
-    locRow: document.getElementById("locRow"),
-    shiftGroups: document.getElementById("shiftGroups"),
-    shiftHint: document.getElementById("shiftHint"),
-    leaveGrid: document.getElementById("leaveGrid"),
-    workPane: document.getElementById("workPane"),
-    leavePane: document.getElementById("leavePane"),
-    segWorkBtn: document.getElementById("segWorkBtn"),
-    segLeaveBtn: document.getElementById("segLeaveBtn"),
-    saveBtn: document.getElementById("saveDayBtn"),
-    delBtn: document.getElementById("delDayBtn"),
-    cntWork: document.getElementById("cntWork"),
-    cntNight: document.getElementById("cntNight"),
-    cntLeave: document.getElementById("cntLeave")
+    noUidCard: $("noUidCard"), noUidTitle: $("noUidTitle"), noUidMsg: $("noUidMsg"),
+    pageToggle: $("pageToggle"), tabMineBtn: $("tabMineBtn"), tabOverviewBtn: $("tabOverviewBtn"),
+    minePage: $("minePage"), overviewPage: $("overviewPage"),
+    meCard: $("meCard"), calCard: $("calCard"), listCard: $("listCard"),
+    greetName: $("greetName"), meta: $("meta"),
+    adminPick: $("adminPick"), empSelect: $("empSelect"), proxyNote: $("proxyNote"),
+    loadError: $("loadError"), loadErrorMsg: $("loadErrorMsg"),
+    brushGrid: $("brushGrid"), leaveEntryBtn: $("leaveEntryBtn"),
+    brushLocRow: $("brushLocRow"), brushStatus: $("brushStatus"),
+    monthLabel: $("monthLabel"), lockHint: $("lockHint"), calLoading: $("calLoading"),
+    grid: $("calendarGrid"),
+    cntWork: $("cntWork"), cntNight: $("cntNight"), cntLeave: $("cntLeave"),
+    sumList: $("sumList"), sendLeaveBtn: $("sendLeaveBtn"),
+    saveBar: $("saveBar"), saveAllBtn: $("saveAllBtn"), discardBtn: $("discardBtn"),
+    leaveOverlay: $("leaveOverlay"), leaveSheetDate: $("leaveSheetDate"), leaveSheetSub: $("leaveSheetSub"),
+    leaveGrid: $("leaveGrid"), leaveClearBtn: $("leaveClearBtn"),
+    pickOverlay: $("pickOverlay"), pickList: $("pickList"), pickNextBtn: $("pickNextBtn"),
+    reviewOverlay: $("reviewOverlay"), reviewSub: $("reviewSub"), reviewList: $("reviewList"),
+    reasonInput: $("reasonInput"), confirmSendBtn: $("confirmSendBtn"),
+    resultOverlay: $("resultOverlay"), resultList: $("resultList"),
+    resultSummary: $("resultSummary"), resultDoneBtn: $("resultDoneBtn"),
+    ovLocRow: $("ovLocRow"), ovDate: $("ovDate"), ovWeekday: $("ovWeekday"),
+    ovTitle: $("ovTitle"), ovCount: $("ovCount"), ovCountNum: $("ovCountNum"),
+    ovAlert: $("ovAlert"), ovLoading: $("ovLoading"), ovList: $("ovList")
   };
 
   // ============================================================
@@ -912,9 +1541,9 @@
     el.noUidCard.style.display = "block";
     el.noUidTitle.textContent = title;
     el.noUidMsg.textContent = msg;
-    el.meCard.style.display = "none";
-    el.calCard.style.display = "none";
-    el.listCard.style.display = "none";
+    el.pageToggle.style.display = "none";
+    el.minePage.style.display = "none";
+    el.overviewPage.style.display = "none";
   }
 
   // 名單的 shift 可能是數字 8/10 或字串；shiftType 後端寫「B」或「正常」，
@@ -928,40 +1557,50 @@
     if (s === "8" && isBType(shiftType)) return ["暗8"];
     if (s === "10" && isBType(shiftType)) return ["暗10"];
     if (s === "10" && normShift(shiftType).indexOf("正常") !== -1) return ["明10", "暗10"];
-    return []; // 名單沒填班別 → 之後開放全部並提示
+    return []; // 名單沒填班別 → 開放全部並提示
+  }
+
+  function toPerson(p){
+    return {
+      name: String(p.name || "").trim(),
+      userId: String(p.userId || "").trim(),
+      dept: String(p.dept || "").trim(),
+      areas: String(p.area || "").split(/[,，、]/)
+        .map(function(a){ return a.trim(); })
+        .filter(function(a){ return a; }),
+      shift: normShift(p.shift),
+      shiftType: normShift(p.shiftType)
+    };
   }
 
   function loadRoster(){
     el.loadError.style.display = "none";
-    getJSON(ROSTER_GAS_URL + "?action=getRoster")
+    getJSON(LEAVE_GAS_URL + "?action=getRoster")
       .then(function(list){
+        state.roster = (list || []).filter(function(p){ return p && p.userId; });
         var found = null;
-        (list || []).forEach(function(p){
-          if (!p) return;
-          if (String(p.userId || "").trim() === urlUid) found = p;
+        state.roster.forEach(function(p){
+          if (String(p.userId).trim() === urlUid) found = p;
         });
         if (!found){
           showNoUid("找不到你的資料", "名單裡沒有這個身分（uid），請重新從入口進入，或找管理員確認名單。");
           return;
         }
-        var areas = String(found.area || "").split(/[,，、]/)
-          .map(function(a){ return a.trim(); })
-          .filter(function(a){ return a; });
+        state.viewer = toPerson(found);
+        // 管理員身分以名單為準，不信任網址上的 dept（網址可以被手動改）
+        state.isAdmin = state.viewer.dept === "管理員";
 
-        state.me = {
-          name: String(found.name || "").trim(),
-          userId: String(found.userId || "").trim(),
-          dept: String(found.dept || "").trim(),
-          areas: areas,
-          shift: normShift(found.shift),
-          shiftType: normShift(found.shiftType)
-        };
-        state.groups = groupsFor(state.me.shift, state.me.shiftType);
-        renderMe();
+        el.greetName.textContent = state.viewer.name;
         el.meCard.style.display = "block";
-        el.calCard.style.display = "block";
-        el.listCard.style.display = "block";
-        loadMonth();
+        el.pageToggle.style.display = "flex";
+        el.tabMineBtn.textContent = state.isAdmin ? "代排班" : "我的排班";
+        initOverview();
+
+        if (state.isAdmin){
+          setupAdminPicker();
+        } else {
+          setTarget(state.viewer);
+        }
       })
       .catch(function(err){
         console.error("[名單] 載入失敗", err);
@@ -971,24 +1610,96 @@
       });
   }
 
+  // 管理員：列出所有倫倫員工讓他挑一個代排
+  function setupAdminPicker(){
+    var members = state.roster
+      .filter(function(p){ return String(p.dept || "").trim() === "倫倫"; })
+      .map(toPerson);
+    el.empSelect.innerHTML = '<option value="">請選擇倫倫員工</option>';
+    members.forEach(function(p){
+      var opt = document.createElement("option");
+      opt.value = p.userId;
+      opt.textContent = p.name + (p.areas.length ? "（" + p.areas.join("、") + "）" : "");
+      el.empSelect.appendChild(opt);
+    });
+    el.meta.innerHTML = '<span class="tag">管理員</span>選一位員工就能幫他排班，不受鎖定限制。';
+    el.adminPick.style.display = "block";
+    el.calCard.style.display = "none";
+    el.listCard.style.display = "none";
+
+    el.empSelect.onchange = function(){
+      // 還有沒儲存的變更就不讓換人，避免存到錯的人身上或默默丟掉
+      if (pendingCount() > 0 || state.saving){
+        el.empSelect.value = state.me ? state.me.userId : "";
+        showToast("還有 " + pendingCount() + " 天沒儲存，請先按「儲存」或「放棄」", true);
+        return;
+      }
+      var uid = el.empSelect.value;
+      var p = null;
+      members.forEach(function(m){ if (m.userId === uid) p = m; });
+      if (!p){
+        state.me = null;
+        el.proxyNote.style.display = "none";
+        el.calCard.style.display = "none";
+        el.listCard.style.display = "none";
+        return;
+      }
+      setTarget(p);
+    };
+  }
+
+  // 設定「正在排誰的班」，班別依這個人的 shift/shiftType、館別依他的 area
+  function setTarget(person){
+    state.me = person;
+    state.groups = groupsFor(person.shift, person.shiftType);
+    state.brush = null;
+    state.brushLoc = person.areas[0] || null;
+    state.pending = {};
+    renderMe();
+    renderBrush();
+    el.calCard.style.display = "block";
+    el.listCard.style.display = "block";
+    loadMonth();
+  }
+
+  function describe(p){
+    var bits = [];
+    if (p.shift) bits.push(p.shift + " 小時");
+    if (p.shiftType) bits.push(isBType(p.shiftType) ? "B班" : p.shiftType);
+    return bits;
+  }
+
   function renderMe(){
     var me = state.me;
-    el.greetName.textContent = me.name;
+    var warn = !state.groups.length
+      ? '<br><span style="color:var(--warn);font-weight:700;">名單沒有填班別（8/10、B班/正常），先開放全部班別，請找管理員補上。</span>'
+      : "";
+    var areaTxt = me.areas.length ? "館別：" + me.areas.join("、") : "館別：名單未填";
 
-    var bits = [];
-    if (me.shift) bits.push('<span class="tag">' + me.shift + ' 小時</span>');
-    if (me.shiftType) bits.push('<span class="tag">' + (isBType(me.shiftType) ? "B班" : me.shiftType) + '</span>');
-    var line1 = bits.join("");
-    var line2 = me.areas.length ? "館別：" + me.areas.join("、") : "館別：名單未填";
-    var line3 = "";
-    if (!state.groups.length){
-      line3 = '<br><span style="color:var(--warn);font-weight:700;">名單沒有填班別（8/10、B班/正常），先開放全部班別，請找管理員補上。</span>';
+    if (state.isAdmin){
+      // 管理員：身分卡維持「管理員」字樣，被代排的人資訊放在選單下面
+      el.proxyNote.style.display = "block";
+      el.proxyNote.innerHTML = "";
+      var who = document.createElement("span");
+      who.className = "who";
+      who.textContent = me.name;
+      el.proxyNote.appendChild(document.createTextNode("正在幫 "));
+      el.proxyNote.appendChild(who);
+      el.proxyNote.appendChild(document.createTextNode(" 排班・" + describe(me).concat([areaTxt]).join("・")));
+      if (warn){
+        var w = document.createElement("span");
+        w.innerHTML = warn;
+        el.proxyNote.appendChild(w);
+      }
+      return;
     }
-    el.meta.innerHTML = line1 + "<br>" + line2 + line3;
+
+    var line1 = describe(me).map(function(b){ return '<span class="tag">' + b + '</span>'; }).join("");
+    el.meta.innerHTML = line1 + "<br>" + areaTxt + warn;
   }
 
   // ============================================================
-  // 讀取／畫月曆
+  // 讀取
   // ============================================================
 
   // 後端回傳的日期可能是 "YYYY-MM-DD" 或 ISO 時間字串，統一轉成 YYYY-MM-DD。
@@ -1011,11 +1722,13 @@
   }
 
   function loadMonth(){
+    if (!state.me) return;
     var mKey = monthKey(state.viewYear, state.viewMonth);
+    var token = ++state.loadToken;
     state.data = {};
+    state.pending = {};
     state.loadedMonth = null;
-    renderCalendar();
-    renderList();
+    renderAll();
     el.calLoading.style.display = "block";
     el.calLoading.textContent = "載入排班中…";
 
@@ -1025,6 +1738,7 @@
 
     getJSON(url)
       .then(function(res){
+        if (token !== state.loadToken) return; // 已經切到別的月份／別的員工
         var rows = res;
         if (rows && !Array.isArray(rows)){
           rows = rows.data || rows.list || rows.records || rows.schedule || [];
@@ -1036,40 +1750,71 @@
           if (!date) return;
           var content = String(pick(row, ["content", "Content", "內容", "班別"]) || "").trim();
           if (!content) return;
-          var location = String(pick(row, ["location", "Location", "館別", "館"]) || "").trim();
-          var nightRaw = String(pick(row, ["isNight", "IsNight", "晚班", "是否晚班"]) || "").trim();
-          var isNight = nightRaw === "是" || nightRaw === "true" || nightRaw === "TRUE" || isNightShift(content);
           data[date] = {
             content: content,
-            location: location,
-            isNight: isNight,
-            kind: LEAVE_TYPES.indexOf(content) !== -1 ? "leave" : "work"
+            location: String(pick(row, ["location", "Location", "館別", "館"]) || "").trim(),
+            status: String(pick(row, ["status", "Status", "狀態"]) || "").trim()
           };
         });
         state.data = data;
         state.loadedMonth = mKey;
         el.calLoading.style.display = "none";
-        renderCalendar();
-        renderList();
+        renderAll();
       })
       .catch(function(err){
+        if (token !== state.loadToken) return;
         console.error("[排班] 載入失敗", err);
         el.calLoading.style.display = "block";
         el.calLoading.textContent = "⚠️ 載入這個月的排班失敗（" + err.message + "）";
       });
   }
 
-  function cellStyleFor(entry){
-    if (entry.kind === "leave"){
-      var cat = leaveCategory(entry.content);
-      return { bg: "var(--c-" + cat + ")", fg: "var(--t-" + cat + ")" };
-    }
-    return entry.isNight
-      ? { bg: "var(--c-晚)", fg: "var(--t-晚)" }
-      : { bg: "var(--c-早)", fg: "var(--t-早)" };
+  // ============================================================
+  // 目前畫面上的值＝已存的＋還沒儲存的變更
+  // ============================================================
+  function view(dateStr){
+    if (Object.prototype.hasOwnProperty.call(state.pending, dateStr)) return state.pending[dateStr];
+    return state.data[dateStr] || null;
+  }
+  function isPending(dateStr){ return Object.prototype.hasOwnProperty.call(state.pending, dateStr); }
+  function pendingCount(){ return Object.keys(state.pending).length; }
+  function monthDates(){
+    var y = state.viewYear, m = state.viewMonth, n = new Date(y, m+1, 0).getDate(), out = [];
+    for (var d = 1; d <= n; d++) out.push(isoDate(y, m, d));
+    return out;
   }
 
-  // 月曆格子空間小：上班顯示「班別縮寫＋時間」兩行，假別直接顯示假別名稱。
+  // ============================================================
+  // 鎖定
+  // ============================================================
+  // 後端 status 寫「未鎖」= 可改；其他含「鎖」的（例如「已鎖」）= 鎖定。
+  // 這個月只要有任何一天被鎖，就當整個月鎖定（一般員工不能新增、修改、刪除）。
+  // 「已送請假」的那天也不能再動（假單已經送出去了），跟預休一樣。
+  function isLockedStatus(st){
+    st = String(st || "");
+    return st.indexOf("鎖") !== -1 && st.indexOf("未鎖") === -1;
+  }
+  function isSentStatus(st){ return String(st || "") === SENT_STATUS; }
+  function monthLockStatus(){
+    var found = "";
+    Object.keys(state.data).forEach(function(d){
+      if (!found && isLockedStatus(state.data[d].status)) found = state.data[d].status;
+    });
+    return found; // "" = 沒鎖
+  }
+  // 一般員工能不能動這天；管理員永遠可以。回傳 "" = 可以，否則是原因
+  function blockReason(dateStr){
+    if (state.isAdmin) return "";
+    if (monthLockStatus()) return "這個月已鎖定，不能修改";
+    var e = state.data[dateStr];
+    if (e && isLockedStatus(e.status)) return "這天已鎖定，不能修改";
+    if (e && isSentStatus(e.status)) return "這天已送請假，要修改請聯絡行政";
+    return "";
+  }
+
+  // ============================================================
+  // 顏色
+  // ============================================================
   function findShiftMeta(content){
     for (var g in SHIFT_GROUPS){
       var items = SHIFT_GROUPS[g].items;
@@ -1080,10 +1825,209 @@
     return null;
   }
 
+  // 班別顏色：依班別目錄的 tone（組別＋深淺）；不在目錄裡的班別用中性藍
+  function shiftColor(content){
+    var meta = findShiftMeta(content);
+    if (meta && meta.tone){
+      return { bg: "var(--s-" + meta.tone + ")", fg: "var(--s-" + meta.tone + "t)" };
+    }
+    return { bg: "var(--accent-soft)", fg: "var(--accent-dark)" };
+  }
+
+  function colorFor(content){
+    if (isLeave(content)){
+      var cat = leaveCategory(content);
+      return { bg: "var(--c-" + cat + ")", fg: "var(--t-" + cat + ")" };
+    }
+    return shiftColor(content);
+  }
+
+  // ============================================================
+  // 刷班面板
+  // ============================================================
+  function brushShiftItems(){
+    var keys = state.groups.length ? state.groups : ["明10", "暗10", "暗8"];
+    var out = [];
+    keys.forEach(function(k){ out = out.concat(SHIFT_GROUPS[k].items); });
+    return out;
+  }
+
+  function setBrush(value){
+    state.brush = (state.brush === value) ? null : value; // 再點一次同一個＝取消選取
+    renderBrush();
+  }
+
+  function renderBrush(){
+    if (!state.me) return;
+    el.brushGrid.innerHTML = "";
+
+    brushShiftItems().forEach(function(item){
+      var night = isNightShift(item.name);
+      var c = shiftColor(item.name);
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "brush-btn" + (state.brush === item.name ? " active" : "");
+      btn.style.background = c.bg;
+      btn.style.color = c.fg;
+      btn.innerHTML = item.short + '<span class="when">' + item.when + (night ? " 晚 🌙" : " 早") + "</span>";
+      btn.setAttribute("aria-pressed", state.brush === item.name ? "true" : "false");
+      btn.addEventListener("click", function(){ setBrush(item.name); });
+      el.brushGrid.appendChild(btn);
+    });
+
+    // 休假（例假）跟班別放一起刷
+    var off = document.createElement("button");
+    off.type = "button";
+    off.className = "brush-btn" + (state.brush === "休假" ? " active" : "");
+    off.style.background = "var(--c-休假)";
+    off.style.color = "var(--t-休假)";
+    off.innerHTML = '休假<span class="when">例假</span>';
+    off.setAttribute("aria-pressed", state.brush === "休假" ? "true" : "false");
+    off.addEventListener("click", function(){ setBrush("休假"); });
+    el.brushGrid.appendChild(off);
+
+    el.leaveEntryBtn.classList.toggle("active", state.brush === LEAVE_BRUSH);
+    el.leaveEntryBtn.setAttribute("aria-pressed", state.brush === LEAVE_BRUSH ? "true" : "false");
+
+    // 多館才需要選「排到哪個館」；只有一個館自動帶
+    var areas = state.me.areas;
+    var isWorkBrush = state.brush && state.brush !== "休假" && state.brush !== LEAVE_BRUSH;
+    if (areas.length > 1){
+      el.brushLocRow.style.display = "flex";
+      el.brushLocRow.innerHTML = '<span class="lbl">上班排到</span>';
+      areas.forEach(function(a){
+        var chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "loc-chip" + (state.brushLoc === a ? " selected" : "");
+        chip.textContent = a;
+        chip.addEventListener("click", function(){
+          state.brushLoc = a;
+          renderBrush();
+        });
+        el.brushLocRow.appendChild(chip);
+      });
+    } else {
+      el.brushLocRow.style.display = "none";
+    }
+
+    // 狀態列：清楚寫出「現在刷的是什麼」
+    var st = el.brushStatus;
+    if (!state.brush){
+      st.className = "brush-status idle";
+      st.textContent = "還沒選項目：先點上面的班別、休假或請假";
+    } else if (state.brush === LEAVE_BRUSH){
+      st.className = "brush-status";
+      st.textContent = "選取中：📝 請假 → 點日期，再選假別";
+    } else if (state.brush === "休假"){
+      st.className = "brush-status";
+      st.textContent = "選取中：休假 → 點日期就排上；同一天再點一次取消";
+    } else {
+      st.className = "brush-status";
+      var locTxt = areas.length ? "（" + (state.brushLoc || areas[0]) + "）" : "（名單未填館別）";
+      st.textContent = "選取中：" + state.brush + locTxt + " → 點日期就排上；同一天再點一次取消";
+    }
+    if (isWorkBrush && !areas.length){
+      st.textContent += "｜館別會存空白，請找管理員補名單";
+    }
+  }
+
+  // ============================================================
+  // 點日期：刷上目前的項目
+  // ============================================================
+  function onDayClick(dateStr){
+    if (state.saving){ showToast("儲存中，請稍等"); return; }
+    if (state.loadedMonth !== monthKey(state.viewYear, state.viewMonth)){
+      showToast("排班還在載入，請稍等一下");
+      return;
+    }
+    var reason = blockReason(dateStr);
+    if (reason){ showToast(reason, true); return; }
+    if (!state.brush){
+      showToast("先在上面選一個班別、休假或請假，再點日期", true);
+      return;
+    }
+    if (state.brush === LEAVE_BRUSH){
+      openLeaveSheet(dateStr);
+      return;
+    }
+    var loc = isLeave(state.brush) ? "" : (state.brushLoc || "");
+    setDay(dateStr, { content: state.brush, location: loc });
+  }
+
+  // 把某天設成 val（null = 清空）。同一天已經是同一個項目（同館）→ 取消。
+  function setDay(dateStr, val){
+    var cur = view(dateStr);
+    if (val && cur && cur.content === val.content &&
+        (isLeave(val.content) || (cur.location || "") === (val.location || ""))){
+      val = null;
+    }
+    commitDay(dateStr, val);
+  }
+
+  // 寫進 pending；如果結果跟後端已存的一樣，就不算變更
+  function commitDay(dateStr, val){
+    var saved = state.data[dateStr];
+    var same = (!val && !saved) ||
+      (val && saved && saved.content === val.content &&
+       (saved.location || "") === (val.location || ""));
+    if (same) delete state.pending[dateStr];
+    else state.pending[dateStr] = val;
+    renderAll();
+  }
+
+  // ---- 請假類選單 ----
+  function openLeaveSheet(dateStr){
+    state.leaveDate = dateStr;
+    var cur = view(dateStr);
+    el.leaveSheetDate.textContent = formatDateLabel(dateStr);
+    el.leaveSheetSub.textContent = cur ? "目前：" + cur.content + "（選同一個＝取消）" : "選這天的假別";
+    el.leaveGrid.innerHTML = "";
+    REQUEST_TYPES.forEach(function(t){
+      var c = colorFor(t);
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "type-btn" + (cur && cur.content === t ? " selected" : "");
+      btn.style.background = c.bg;
+      btn.style.color = c.fg;
+      btn.textContent = t;
+      btn.addEventListener("click", function(){
+        setDay(dateStr, { content: t, location: "" });
+        closeLeaveSheet();
+      });
+      el.leaveGrid.appendChild(btn);
+    });
+    el.leaveClearBtn.style.display = cur ? "block" : "none";
+    el.leaveOverlay.classList.add("active");
+  }
+  function closeLeaveSheet(){
+    el.leaveOverlay.classList.remove("active");
+    state.leaveDate = null;
+  }
+
+  // ============================================================
+  // 畫面
+  // ============================================================
+  function renderAll(){
+    renderCalendar();
+    renderSummary();
+    renderSaveBar();
+  }
+
   function renderCalendar(){
     var y = state.viewYear, m = state.viewMonth;
     el.monthLabel.textContent = y + "年" + (m+1) + "月";
     el.grid.innerHTML = "";
+
+    var lockSt = state.loadedMonth ? monthLockStatus() : "";
+    if (lockSt){
+      el.lockHint.style.display = "block";
+      el.lockHint.className = "lock-hint" + (state.isAdmin ? " admin" : "");
+      el.lockHint.textContent = state.isAdmin
+        ? "🔒 這個月已鎖定（管理員仍可修改）"
+        : "🔒 這個月已鎖定，不能再修改，有問題請找管理員";
+    } else {
+      el.lockHint.style.display = "none";
+    }
 
     var firstDayOfWeek = new Date(y, m, 1).getDay();
     var daysInMonth = new Date(y, m+1, 0).getDate();
@@ -1119,37 +2063,42 @@
       cell.appendChild(numSpan);
 
       if (inCurrentMonth){
-        var entry = state.data[cellIso];
+        var entry = view(cellIso);
+        var saved = state.data[cellIso];
+        if (isPending(cellIso)) cell.classList.add("pending");
         if (entry){
           cell.classList.add("has-entry");
-          var st = cellStyleFor(entry);
-          cell.style.background = st.bg;
-          cell.style.color = st.fg;
+          var c = colorFor(entry.content);
+          cell.style.background = c.bg;
+          cell.style.color = c.fg;
 
           var txt = document.createElement("span");
           txt.className = "cell-text";
-          if (entry.kind === "work"){
-            var meta = findShiftMeta(entry.content);
-            if (meta){
-              txt.innerHTML = meta.short + '<span class="t2">' + meta.when + "</span>";
-            } else {
-              txt.textContent = entry.content;
-            }
+          var meta = findShiftMeta(entry.content);
+          if (meta){
+            txt.innerHTML = meta.short + '<span class="t2">' + meta.when + "</span>";
           } else {
             txt.textContent = entry.content;
           }
           cell.appendChild(txt);
 
-          if (entry.isNight){
+          if (isNightShift(entry.content)){
             var dot = document.createElement("span");
             dot.className = "night-dot";
             dot.textContent = "🌙";
             cell.appendChild(dot);
           }
+          if (!isPending(cellIso) && saved && isSentStatus(saved.status)){
+            var sent = document.createElement("span");
+            sent.className = "sent-mark";
+            sent.textContent = "📨";
+            cell.appendChild(sent);
+          }
         }
+        if (saved && isLockedStatus(saved.status)) cell.classList.add("locked");
         if (cellIso === todayIso) cell.classList.add("today");
         cell.addEventListener("click", (function(dateStr){
-          return function(){ openSheet(dateStr); };
+          return function(){ onDayClick(dateStr); };
         })(cellIso));
       }
 
@@ -1157,294 +2106,788 @@
     }
 
     var work = 0, night = 0, leave = 0;
-    Object.keys(state.data).forEach(function(d){
-      var e = state.data[d];
-      if (e.kind === "leave"){ leave++; }
-      else { work++; if (e.isNight) night++; }
+    monthDates().forEach(function(d){
+      var e = view(d);
+      if (!e) return;
+      if (isLeave(e.content)) leave++;
+      else { work++; if (isNightShift(e.content)) night++; }
     });
     el.cntWork.textContent = work;
     el.cntNight.textContent = night;
     el.cntLeave.textContent = leave;
   }
 
-  function renderList(){
-    var dates = Object.keys(state.data).sort();
-    if (!dates.length){
-      el.dayList.innerHTML = '<div class="empty-hint">這個月還沒有排班</div>';
+  // 本月已排：依項目統整（班別依目錄順序 → 其他班別 → 休假 → 請假類）
+  function renderSummary(){
+    var byContent = {};
+    monthDates().forEach(function(d){
+      var e = view(d);
+      if (!e) return;
+      (byContent[e.content] = byContent[e.content] || []).push(d);
+    });
+
+    var order = [];
+    ["明10", "暗10", "暗8"].forEach(function(k){
+      SHIFT_GROUPS[k].items.forEach(function(it){ order.push(it.name); });
+    });
+    var workKeys = order.filter(function(c){ return byContent[c]; });
+    Object.keys(byContent).forEach(function(c){
+      if (!isLeave(c) && workKeys.indexOf(c) === -1) workKeys.push(c);
+    });
+    var leaveKeys = LEAVE_TYPES.filter(function(c){ return byContent[c]; });
+
+    el.sumList.innerHTML = "";
+    if (!workKeys.length && !leaveKeys.length){
+      el.sumList.innerHTML = '<div class="empty-hint">這個月還沒有排班</div>';
       return;
     }
-    el.dayList.innerHTML = "";
-    dates.forEach(function(dateStr){
-      var e = state.data[dateStr];
-      var parts = dateStr.split("-");
-      var d = new Date(+parts[0], +parts[1]-1, +parts[2]);
-      var st = cellStyleFor(e);
+    var multiArea = state.me && state.me.areas.length > 1;
 
-      var row = document.createElement("div");
-      row.className = "day-row";
+    function section(title, keys){
+      if (!keys.length) return;
+      var h = document.createElement("div");
+      h.className = "sum-sec";
+      h.textContent = title;
+      el.sumList.appendChild(h);
 
-      var dEl = document.createElement("span");
-      dEl.className = "d";
-      dEl.textContent = (+parts[1]) + "/" + (+parts[2]) + "（" + WEEKDAY_ZH[d.getDay()] + "）";
-      row.appendChild(dEl);
+      keys.forEach(function(content){
+        var dates = byContent[content];
+        var row = document.createElement("div");
+        row.className = "sum-row";
 
-      var txtEl = document.createElement("span");
-      txtEl.className = "txt";
-      txtEl.textContent = e.kind === "work" && e.location ? e.location : "";
-      row.appendChild(txtEl);
+        var c = colorFor(content);
+        var pill = document.createElement("span");
+        pill.className = "pill";
+        pill.style.background = c.bg;
+        pill.style.color = c.fg;
+        pill.textContent = content + (isNightShift(content) ? " 🌙" : "");
+        row.appendChild(pill);
 
-      var pill = document.createElement("span");
-      pill.className = "pill";
-      pill.style.background = st.bg;
-      pill.style.color = st.fg;
-      pill.textContent = e.content + (e.isNight ? " 🌙" : "");
-      row.appendChild(pill);
-
-      row.addEventListener("click", function(){ openSheet(dateStr); });
-      el.dayList.appendChild(row);
-    });
-  }
-
-  // ============================================================
-  // 單日排班選單
-  // ============================================================
-  function openSheet(dateStr){
-    var parts = dateStr.split("-");
-    var d = new Date(+parts[0], +parts[1]-1, +parts[2]);
-    state.sheetDate = dateStr;
-
-    el.sheetDate.textContent = (+parts[1]) + "月" + (+parts[2]) + "日（" + WEEKDAY_ZH[d.getDay()] + "）";
-
-    var existing = state.data[dateStr];
-    if (existing){
-      el.sheetSub.textContent = "目前：" + existing.content + (existing.location ? "・" + existing.location : "");
-      state.sheetMode = existing.kind === "leave" ? "leave" : "work";
-      state.pickShift = existing.kind === "work" ? existing.content : null;
-      state.pickLeave = existing.kind === "leave" ? existing.content : null;
-      state.pickLoc = existing.kind === "work" && existing.location ? existing.location : null;
-      el.delBtn.style.display = "block";
-    } else {
-      el.sheetSub.textContent = "選擇這天要上班還是休假";
-      state.sheetMode = "work";
-      state.pickShift = null;
-      state.pickLeave = null;
-      state.pickLoc = null;
-      el.delBtn.style.display = "none";
-    }
-
-    // 只有一個館就直接選好，不用再點
-    if (!state.pickLoc && state.me.areas.length === 1) state.pickLoc = state.me.areas[0];
-
-    el.delBtn.disabled = false;
-    el.saveBtn.textContent = "存這天";
-    renderLocRow();
-    renderShiftGroups();
-    renderLeaveGrid();
-    applyMode();
-    el.overlay.classList.add("active");
-  }
-
-  function closeSheet(){
-    el.overlay.classList.remove("active");
-    state.sheetDate = null;
-  }
-
-  function applyMode(){
-    var isWork = state.sheetMode === "work";
-    el.segWorkBtn.classList.toggle("active", isWork);
-    el.segLeaveBtn.classList.toggle("active", !isWork);
-    el.workPane.style.display = isWork ? "block" : "none";
-    el.leavePane.style.display = isWork ? "none" : "block";
-    refreshSaveBtn();
-  }
-
-  function refreshSaveBtn(){
-    var ok;
-    if (state.sheetMode === "work"){
-      ok = !!state.pickShift && (!!state.pickLoc || state.me.areas.length === 0);
-    } else {
-      ok = !!state.pickLeave;
-    }
-    el.saveBtn.disabled = !ok || state.busy;
-  }
-
-  function renderLocRow(){
-    el.locRow.innerHTML = "";
-    if (!state.me.areas.length){
-      var warn = document.createElement("span");
-      warn.style.cssText = "font-size:12px;color:var(--warn);font-weight:700;";
-      warn.textContent = "名單裡沒有填你的館別，會以空白存檔，請找管理員補上。";
-      el.locRow.appendChild(warn);
-      return;
-    }
-    state.me.areas.forEach(function(area){
-      var btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "loc-chip" + (state.pickLoc === area ? " selected" : "");
-      btn.textContent = area;
-      btn.addEventListener("click", function(){
-        state.pickLoc = area;
-        renderLocRow();
-        refreshSaveBtn();
-      });
-      el.locRow.appendChild(btn);
-    });
-  }
-
-  function renderShiftGroups(){
-    el.shiftGroups.innerHTML = "";
-    var groups = state.groups.length ? state.groups : ["明10", "暗10", "暗8"];
-    el.shiftHint.textContent = state.groups.length > 1 ? "（以 " + SHIFT_GROUPS[groups[0]].label + " 為主）" : "";
-
-    groups.forEach(function(gKey, gi){
-      var g = SHIFT_GROUPS[gKey];
-      var wrap = document.createElement("div");
-      wrap.className = "shift-group";
-
-      var gname = document.createElement("div");
-      gname.className = "gname";
-      gname.textContent = g.label + (groups.length > 1 && gi === 0 ? "（主要）" : "");
-      wrap.appendChild(gname);
-
-      var list = document.createElement("div");
-      list.className = "shift-list";
-      g.items.forEach(function(item){
-        var night = isNightShift(item.name);
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "shift-btn" + (state.pickShift === item.name ? " selected" : "");
-        btn.style.background = night ? "var(--c-晚)" : "var(--c-早)";
-        btn.style.color = night ? "var(--t-晚)" : "var(--t-早)";
-        btn.innerHTML = item.short + '<span class="when">' + item.when + (night ? " 晚班 🌙" : " 早班") + "</span>";
-        btn.addEventListener("click", function(){
-          state.pickShift = item.name;
-          renderShiftGroups();
-          refreshSaveBtn();
+        var ds = document.createElement("div");
+        ds.className = "sum-dates";
+        dates.forEach(function(d, idx){
+          var e = view(d), saved = state.data[d];
+          var span = document.createElement("span");
+          span.className = "dt" + (isPending(d) ? " pend" : "");
+          span.textContent = shortDate(d);
+          if (multiArea && !isLeave(content) && e.location){
+            var l = document.createElement("span");
+            l.className = "loc";
+            l.textContent = "(" + e.location + ")";
+            span.appendChild(l);
+          }
+          if (!isPending(d) && saved && isSentStatus(saved.status)){
+            var s = document.createElement("span");
+            s.className = "sent";
+            s.textContent = " 已送";
+            span.appendChild(s);
+          }
+          ds.appendChild(span);
+          if (idx < dates.length - 1) ds.appendChild(document.createTextNode("、"));
         });
-        list.appendChild(btn);
+        row.appendChild(ds);
+
+        var cnt = document.createElement("span");
+        cnt.className = "cnt";
+        cnt.textContent = dates.length + " 天";
+        row.appendChild(cnt);
+
+        el.sumList.appendChild(row);
       });
-      wrap.appendChild(list);
-      el.shiftGroups.appendChild(wrap);
+    }
+    section("上班", workKeys);
+    section("休假／請假", leaveKeys);
+  }
+
+  var discardArmed = false, discardTimer = null;
+  function renderSaveBar(){
+    var n = pendingCount();
+    var show = n > 0 && state.tab === "mine";
+    el.saveBar.classList.toggle("show", show);
+    document.body.classList.toggle("has-save-bar", show);
+    if (!state.saving){
+      el.saveAllBtn.disabled = n === 0;
+      el.saveAllBtn.textContent = "儲存（" + n + " 天）";
+    }
+    el.discardBtn.disabled = state.saving;
+    if (!n){
+      discardArmed = false;
+      el.discardBtn.classList.remove("confirming");
+      el.discardBtn.textContent = "放棄";
+    }
+  }
+
+  // ============================================================
+  // 儲存：把所有變更一次寫進後端（逐筆循序送，避免同時打爆 GAS）
+  // ============================================================
+  // 狀態：一般員工一律「未鎖」。管理員改已鎖的天 → 保留原本的鎖定狀態；
+  // 管理員在已鎖的月份新增 → 跟著這個月的鎖定狀態，不會偷偷解鎖。
+  function statusForSave(dateStr){
+    if (!state.isAdmin) return "未鎖";
+    var prev = state.data[dateStr];
+    if (prev && isLockedStatus(prev.status)) return prev.status;
+    return monthLockStatus() || "未鎖";
+  }
+
+  function saveAll(){
+    if (state.saving) return;
+    var dates = Object.keys(state.pending).sort();
+    if (!dates.length) return;
+    var target = state.me; // 存檔的 name/userId 一律用「被排班的人」，不是管理員自己
+    state.saving = true;
+    el.empSelect.disabled = true;
+    renderSaveBar();
+
+    var ok = 0, fail = 0;
+    function step(i){
+      if (i >= dates.length){
+        state.saving = false;
+        el.empSelect.disabled = false;
+        delete state.ovCache[monthKey(state.viewYear, state.viewMonth)]; // 館別總覽下次重抓
+        renderAll();
+        if (fail) showToast("已存 " + ok + " 天，" + fail + " 天失敗，請再按一次儲存", true);
+        else showToast("已儲存 " + ok + " 天");
+        return;
+      }
+      el.saveAllBtn.disabled = true;
+      el.saveAllBtn.textContent = "儲存中 " + (i + 1) + " / " + dates.length + "…";
+
+      var d = dates[i];
+      var val = state.pending[d];
+      var req;
+      if (val){
+        var status = statusForSave(d);
+        req = postJSON(SCHEDULE_GAS_URL, {
+          action: "saveSchedule",
+          name: target.name,
+          userId: target.userId,
+          location: isLeave(val.content) ? "" : (val.location || ""),
+          date: d,
+          content: val.content,
+          isNight: isNightShift(val.content) ? "是" : "否",
+          isSpecial: "否",
+          specialNote: "",
+          status: status
+        }).then(function(r){
+          if (!isBackendSuccess(r)) throw r;
+          state.data[d] = { content: val.content, location: isLeave(val.content) ? "" : (val.location || ""), status: status };
+        });
+      } else if (state.data[d]){
+        req = postJSON(SCHEDULE_GAS_URL, {
+          action: "deleteSchedule",
+          userId: target.userId,
+          date: d
+        }).then(function(r){
+          if (!isBackendSuccess(r)) throw r;
+          delete state.data[d];
+        });
+      } else {
+        req = Promise.resolve();
+      }
+      req.then(function(){
+        ok++;
+        delete state.pending[d];
+      }).catch(function(r){
+        fail++;
+        console.error("[儲存] " + d + " 失敗", errorText(r));
+      }).then(function(){
+        renderCalendar();
+        renderSummary();
+        step(i + 1);
+      });
+    }
+    step(0);
+  }
+
+  // 放棄：點兩下才生效，避免手滑把排好的整個月丟掉
+  function discardAll(){
+    if (state.saving) return;
+    if (!discardArmed){
+      discardArmed = true;
+      el.discardBtn.classList.add("confirming");
+      el.discardBtn.textContent = "確定放棄？";
+      clearTimeout(discardTimer);
+      discardTimer = setTimeout(function(){
+        discardArmed = false;
+        el.discardBtn.classList.remove("confirming");
+        el.discardBtn.textContent = "放棄";
+      }, 3000);
+      return;
+    }
+    clearTimeout(discardTimer);
+    state.pending = {};
+    renderAll();
+    showToast("已放棄還沒儲存的變更");
+  }
+
+  // ============================================================
+  // 送請假系統（流程跟預休一樣：勾選 → 確認假別/照片 → 逐筆送 → 回寫狀態）
+  // ============================================================
+  var pickCandidates = [];
+  var pendingRows = [];
+
+  function onSendLeaveClick(){
+    if (!state.me) return;
+    if (pendingCount() > 0){
+      showToast("還有變更沒儲存，請先按「儲存」再送請假", true);
+      return;
+    }
+    if (!state.isAdmin && monthLockStatus()){
+      showToast("此月份已鎖定，僅供查看，無法送出。", true);
+      return;
+    }
+    // 需要送的＝請假類（特休、事假…）；休假（例假）不用送
+    var special = Object.keys(state.data).filter(function(d){
+      return REQUEST_TYPES.indexOf(state.data[d].content) !== -1;
+    });
+    if (!special.length){
+      showToast("當月無請假類需申請", true);
+      return;
+    }
+    var dates = special.filter(function(d){ return !isSentStatus(state.data[d].status); }).sort();
+    if (!dates.length){
+      showToast("當月請假類皆已完成申請", true);
+      return;
+    }
+    pickCandidates = dates;
+    renderPickList();
+    el.pickOverlay.classList.add("active");
+  }
+
+  function renderPickList(){
+    el.pickList.innerHTML = "";
+    pickCandidates.forEach(function(dateStr){
+      var entry = state.data[dateStr];
+      var row = document.createElement("label");
+      row.className = "pick-row";
+
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = true;
+      cb.dataset.date = dateStr;
+      cb.addEventListener("change", updatePickNextState);
+      row.appendChild(cb);
+
+      var dateSpan = document.createElement("span");
+      dateSpan.className = "pick-date";
+      dateSpan.textContent = formatDateLabel(dateStr);
+      row.appendChild(dateSpan);
+
+      var c = colorFor(entry.content);
+      var badge = document.createElement("span");
+      badge.className = "rr-badge";
+      badge.style.background = c.bg;
+      badge.style.color = c.fg;
+      badge.textContent = entry.content;
+      row.appendChild(badge);
+
+      el.pickList.appendChild(row);
+    });
+    updatePickNextState();
+  }
+
+  function updatePickNextState(){
+    el.pickNextBtn.disabled = !Array.prototype.some.call(
+      el.pickList.querySelectorAll("input[type=checkbox]"),
+      function(cb){ return cb.checked; }
+    );
+  }
+
+  function openReviewForDates(dates){
+    pendingRows = dates.map(function(dateStr){
+      return { dateStr: dateStr, type: state.data[dateStr].content, photoBase64: "", photoName: "" };
+    });
+    el.reasonInput.value = "";
+    el.reviewSub.textContent = "共 " + pendingRows.length + " 筆，請確認假別";
+    renderReviewList();
+    updateConfirmState();
+    el.reviewOverlay.classList.add("active");
+  }
+
+  function renderReviewList(){
+    el.reviewList.innerHTML = "";
+    pendingRows.forEach(function(row){
+      var box = document.createElement("div");
+      box.className = "review-row";
+
+      var top = document.createElement("div");
+      top.className = "rr-top";
+      var dateEl = document.createElement("span");
+      dateEl.className = "rr-date";
+      dateEl.textContent = formatDateLabel(row.dateStr);
+      top.appendChild(dateEl);
+      var c = colorFor(row.type);
+      var badge = document.createElement("span");
+      badge.className = "rr-badge";
+      badge.style.background = c.bg;
+      badge.style.color = c.fg;
+      badge.textContent = row.type === "特休" ? "特休" : "其他";
+      top.appendChild(badge);
+      box.appendChild(top);
+
+      // 特休直接帶；其他可以在這裡再確認／改細假別
+      if (row.type !== "特休"){
+        var select = document.createElement("select");
+        select.className = "rr-subtype";
+        REQUEST_TYPES.filter(function(t){ return t !== "特休"; }).forEach(function(t){
+          var opt = document.createElement("option");
+          opt.value = t;
+          opt.textContent = t;
+          select.appendChild(opt);
+        });
+        select.value = row.type;
+        select.addEventListener("change", function(){
+          row.type = select.value;
+          row.photoBase64 = "";
+          row.photoName = "";
+          renderReviewList();
+          updateConfirmState();
+        });
+        box.appendChild(select);
+
+        if (PHOTO_OPTIONAL_TYPES.indexOf(row.type) !== -1){
+          var photoWrap = document.createElement("div");
+          photoWrap.className = "rr-photo";
+
+          var label = document.createElement("span");
+          label.className = "rr-photo-label";
+          label.textContent = "📎 可上傳" + row.type + "證明照片（選填）";
+          photoWrap.appendChild(label);
+
+          var fileInput = document.createElement("input");
+          fileInput.type = "file";
+          fileInput.accept = "image/*";
+          fileInput.addEventListener("change", function(){
+            var file = fileInput.files[0];
+            if (!file) return;
+            compressImageToBase64(file).then(function(base64){
+              row.photoBase64 = base64;
+              row.photoName = file.name;
+              renderReviewList();
+              updateConfirmState();
+            }).catch(function(){
+              showToast("這張照片讀取失敗，請重新選擇。", true);
+            });
+          });
+          photoWrap.appendChild(fileInput);
+
+          if (row.photoBase64){
+            var preview = document.createElement("div");
+            preview.className = "rr-photo-preview";
+            var img = document.createElement("img");
+            img.src = row.photoBase64;
+            preview.appendChild(img);
+            var nameSpan = document.createElement("span");
+            nameSpan.textContent = "已選擇：" + row.photoName;
+            preview.appendChild(nameSpan);
+            photoWrap.appendChild(preview);
+          } else {
+            var warn = document.createElement("div");
+            warn.className = "rr-warn";
+            warn.textContent = "⚠️ 尚未上傳證明，送出後請記得到 LINE 補傳給行政";
+            photoWrap.appendChild(warn);
+          }
+          box.appendChild(photoWrap);
+        }
+      }
+      el.reviewList.appendChild(box);
     });
   }
 
-  function renderLeaveGrid(){
-    el.leaveGrid.innerHTML = "";
-    LEAVE_TYPES.forEach(function(t){
-      var cat = leaveCategory(t);
-      var btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "type-btn" + (state.pickLeave === t ? " selected" : "");
-      btn.style.background = "var(--c-" + cat + ")";
-      btn.style.color = "var(--t-" + cat + ")";
-      btn.textContent = t;
-      btn.addEventListener("click", function(){
-        state.pickLeave = t;
-        renderLeaveGrid();
-        refreshSaveBtn();
-      });
-      el.leaveGrid.appendChild(btn);
+  function updateConfirmState(){
+    el.confirmSendBtn.disabled = !pendingRows.every(function(r){ return !!r.type; });
+  }
+
+  // 壓縮照片並轉成完整 data URL base64（後端用開頭 data:image/...;base64, 判斷 MIME 類型，
+  // 所以絕對不能只送純 base64、一定要保留完整開頭）
+  function compressImageToBase64(file){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(e){
+        var img = new Image();
+        img.onload = function(){
+          var maxDim = 1280;
+          var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          var w = Math.max(1, Math.round(img.width * scale));
+          var h = Math.max(1, Math.round(img.height * scale));
+          var canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL("image/jpeg", 0.75));
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
     });
   }
 
-  // ---- 存 ----
-  function saveDay(){
-    if (state.busy || !state.sheetDate) return;
-    var dateStr = state.sheetDate;
-    var isWork = state.sheetMode === "work";
-    var content = isWork ? state.pickShift : state.pickLeave;
-    if (!content) return;
+  // 正式假單：不帶 action（後端才會當成請假單），也不帶 source/batchId，
+  // 走請假系統原本「依天數」的審核流程。
+  function buildLeavePayload(row, person){
+    return {
+      name: person.name,
+      type: row.type,
+      start: row.dateStr + " 09:00",
+      end: row.dateStr + " 18:00",
+      reason: el.reasonInput.value || "",
+      dept: person.dept,
+      photoData: row.photoBase64 || "",
+      photoName: row.photoName || "",
+      days: 1
+    };
+  }
 
-    // 休假／請假那天不算在任何館，location 存空字串；上班才帶選到的館。
-    var location = isWork ? (state.pickLoc || "") : "";
-    var night = isWork && isNightShift(content);
-
-    state.busy = true;
-    el.saveBtn.disabled = true;
-    el.saveBtn.textContent = "存檔中…";
-
-    postJSON(SCHEDULE_GAS_URL, {
+  // 假單送出成功後，回寫排班系統這天的狀態為「已送請假」
+  function buildStatusPayload(row, person){
+    return {
       action: "saveSchedule",
-      name: state.me.name,
-      userId: state.me.userId,
-      location: location,
-      date: dateStr,
-      content: content,
-      isNight: night ? "是" : "否",
+      name: person.name,
+      userId: person.userId,
+      location: "",
+      date: row.dateStr,
+      content: row.type,
+      isNight: "否",
       isSpecial: "否",
       specialNote: "",
-      status: "未鎖"
-    }).then(function(result){
-      state.busy = false;
-      el.saveBtn.textContent = "存這天";
-      if (!isBackendSuccess(result)){
-        refreshSaveBtn();
-        showToast("存檔失敗：" + errorText(result), true);
-        return;
+      status: SENT_STATUS
+    };
+  }
+
+  function runSendFlow(){
+    var person = state.me;
+    el.resultList.innerHTML = "";
+    el.resultSummary.textContent = "";
+    el.resultDoneBtn.style.display = "none";
+
+    var items = pendingRows.map(function(row){
+      var box = document.createElement("div");
+      box.className = "result-row";
+      var top = document.createElement("div");
+      top.className = "result-row-top";
+      var left = document.createElement("span");
+      left.textContent = formatDateLabel(row.dateStr) + " " + row.type;
+      top.appendChild(left);
+      var status = document.createElement("span");
+      status.className = "result-status rs-pending";
+      status.textContent = "⏳ 等待中";
+      top.appendChild(status);
+      box.appendChild(top);
+      var note = document.createElement("div");
+      note.className = "result-row-note";
+      note.style.display = "none";
+      box.appendChild(note);
+      el.resultList.appendChild(box);
+      return { row: row, status: status, note: note, result: "pending" };
+    });
+    el.resultOverlay.classList.add("active");
+
+    function setStatus(item, cls, text, retryLabel, retryFn){
+      item.status.className = "result-status " + cls;
+      item.status.innerHTML = "";
+      var t = document.createElement("span");
+      t.textContent = text;
+      item.status.appendChild(t);
+      if (retryLabel){
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "btn-retry-sm";
+        b.textContent = retryLabel;
+        b.addEventListener("click", function(){ retryFn().then(function(){ updateFinalSummary(items); renderAll(); }); });
+        item.status.appendChild(b);
       }
-      state.data[dateStr] = {
-        content: content,
-        location: location,
-        isNight: night,
-        kind: isWork ? "work" : "leave"
-      };
-      renderCalendar();
-      renderList();
-      closeSheet();
-      showToast("已存：" + dateStr.slice(5).replace("-", "/") + " " + content);
+    }
+
+    // 步驟一：送到請假系統（正式假單）
+    function sendLeave(item){
+      setStatus(item, "rs-pending", "⏳ 送出中");
+      item.note.style.display = "none";
+      return postJSON(LEAVE_GAS_URL, buildLeavePayload(item.row, person)).then(function(result){
+        if (!isLeaveSendSuccess(result)){
+          item.result = "fail";
+          setStatus(item, "rs-fail", "❌ 假單送出失敗", "重試", function(){ return sendLeave(item); });
+          item.note.style.display = "block";
+          item.note.textContent = errorText(result);
+          return;
+        }
+        return updateStatus(item, 1);
+      });
+    }
+
+    // 步驟二：回寫排班系統狀態。失敗不代表假單沒送（步驟一已成功），
+    // 所以自動重試 2 次；都失敗才顯示「狀態未同步」＋手動重試，不算進送出失敗。
+    function updateStatus(item, attempt){
+      setStatus(item, "rs-pending", attempt > 1 ? "⏳ 更新狀態中（自動重試 " + (attempt - 1) + "）" : "⏳ 更新狀態中");
+      return postJSON(SCHEDULE_GAS_URL, buildStatusPayload(item.row, person)).then(function(result){
+        if (!isBackendSuccess(result)){
+          if (attempt < 3){
+            return new Promise(function(res){ setTimeout(res, 800); }).then(function(){
+              return updateStatus(item, attempt + 1);
+            });
+          }
+          item.result = "warn";
+          setStatus(item, "rs-warn", "⚠️ 假單已送出，狀態未同步", "重試更新", function(){ return updateStatus(item, 1); });
+          item.note.style.display = "block";
+          item.note.textContent = "假單已經送給主管了，只是排班頁的狀態沒更新成功，請勿重新送出這天的假，可稍後重試更新，或請行政協助確認。";
+          return;
+        }
+        item.result = "ok";
+        setStatus(item, "rs-ok", "✅ 已送出");
+        item.note.style.display = "none";
+        if (state.me === person){
+          state.data[item.row.dateStr] = { content: item.row.type, location: "", status: SENT_STATUS };
+        }
+        if (PHOTO_OPTIONAL_TYPES.indexOf(item.row.type) !== -1 && !item.row.photoBase64){
+          item.note.style.display = "block";
+          item.note.textContent = "⚠️ 尚未附證明，請記得到 LINE 補傳給行政";
+        }
+      });
+    }
+
+    // 逐筆循序送，避免同時大量打後端
+    items.reduce(function(p, item){
+      return p.then(function(){ return sendLeave(item); }).then(function(){ updateFinalSummary(items); });
+    }, Promise.resolve()).then(function(){
+      delete state.ovCache[monthKey(state.viewYear, state.viewMonth)];
+      renderAll();
+      el.resultDoneBtn.style.display = "block";
     });
   }
 
-  // ---- 刪 ----
-  function deleteDay(){
-    if (state.busy || !state.sheetDate) return;
-    var dateStr = state.sheetDate;
-    state.busy = true;
-    el.delBtn.disabled = true;
-    el.saveBtn.disabled = true;
-    el.delBtn.textContent = "刪除中…";
+  function updateFinalSummary(items){
+    var done = items.filter(function(r){ return r.result === "ok"; }).length;
+    var missingPhoto = items.filter(function(r){
+      return r.result === "ok" && PHOTO_OPTIONAL_TYPES.indexOf(r.row.type) !== -1 && !r.row.photoBase64;
+    }).length;
+    var failed = items.filter(function(r){ return r.result === "fail"; }).length;
+    var warned = items.filter(function(r){ return r.result === "warn"; }).length;
 
-    postJSON(SCHEDULE_GAS_URL, {
-      action: "deleteSchedule",
-      userId: state.me.userId,
-      date: dateStr
-    }).then(function(result){
-      state.busy = false;
-      el.delBtn.textContent = "刪除這天";
-      el.delBtn.disabled = false;
-      if (!isBackendSuccess(result)){
-        refreshSaveBtn();
-        showToast("刪除失敗：" + errorText(result), true);
+    var text = "已送出 " + done + " 筆，請等待主管審核";
+    if (missingPhoto) text += "；未附證明的請記得到 LINE 補傳";
+    if (failed) text += "\n（尚有 " + failed + " 筆假單送出失敗，可點選重試）";
+    if (warned) text += "\n（尚有 " + warned + " 筆假單已送出但狀態未同步，請點選重試更新，或聯絡行政確認）";
+    el.resultSummary.textContent = text;
+  }
+
+  // ============================================================
+  // 館別總覽：某館某天有誰上班 vs 房間數
+  // ============================================================
+  function initOverview(){
+    state.ovDate = isoDate(now.getFullYear(), now.getMonth(), now.getDate());
+    // 預設選這個人自己的第一個館（管理員沒館 → 第一個館）
+    var mine = state.viewer.areas.filter(function(a){ return ROOMS[a] !== undefined; });
+    state.ovLoc = mine[0] || LOCATIONS[0];
+    el.ovDate.value = state.ovDate;
+    renderOvLocRow();
+  }
+
+  function renderOvLocRow(){
+    el.ovLocRow.innerHTML = "";
+    LOCATIONS.forEach(function(loc){
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "loc-chip" + (state.ovLoc === loc ? " selected" : "");
+      btn.textContent = loc;
+      btn.addEventListener("click", function(){
+        state.ovLoc = loc;
+        renderOvLocRow();
+        renderOverview();
+      });
+      el.ovLocRow.appendChild(btn);
+    });
+  }
+
+  function shiftDate(dateStr, delta){
+    var p = dateStr.split("-");
+    var d = new Date(+p[0], +p[1]-1, +p[2] + delta);
+    return isoDate(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+
+  function nameForUid(uid){
+    for (var i = 0; i < state.roster.length; i++){
+      if (String(state.roster[i].userId).trim() === uid) return String(state.roster[i].name || "").trim();
+    }
+    return "";
+  }
+
+  function fetchMonthAll(mKey){
+    if (state.ovCache[mKey]) return Promise.resolve(state.ovCache[mKey]);
+    var url = SCHEDULE_GAS_URL + "?action=getScheduleAll&month=" + encodeURIComponent(mKey);
+    return getJSON(url).then(function(res){
+      var rows = res;
+      if (rows && !Array.isArray(rows)){
+        rows = rows.data || rows.list || rows.records || rows.schedule || [];
+      }
+      rows = (rows || []).filter(function(r){ return r && typeof r === "object"; }).map(function(r){
+        var uid = String(pick(r, ["userId", "UserId", "userid"]) || "").trim();
+        return {
+          name: String(pick(r, ["name", "Name", "姓名"]) || "").trim() || nameForUid(uid) || "（未知）",
+          userId: uid,
+          date: normDate(pick(r, ["date", "Date", "日期"])),
+          location: String(pick(r, ["location", "Location", "館別", "館"]) || "").trim(),
+          content: String(pick(r, ["content", "Content", "內容", "班別"]) || "").trim()
+        };
+      });
+      state.ovCache[mKey] = rows;
+      return rows;
+    });
+  }
+
+  var ovToken = 0;
+  function renderOverview(){
+    var dateStr = state.ovDate, loc = state.ovLoc;
+    if (!dateStr || !loc) return;
+    var p = dateStr.split("-");
+    var d = new Date(+p[0], +p[1]-1, +p[2]);
+    el.ovWeekday.textContent = "星期" + WEEKDAY_ZH[d.getDay()];
+    el.ovTitle.textContent = loc + "・" + (+p[1]) + "/" + (+p[2]);
+
+    var rooms = ROOMS[loc];
+    var token = ++ovToken;
+    el.ovLoading.style.display = "block";
+    el.ovLoading.textContent = "載入全部排班中…";
+    el.ovList.innerHTML = "";
+    el.ovAlert.style.display = "none";
+    el.ovCountNum.textContent = "– / " + rooms;
+    el.ovCount.className = "ov-count";
+
+    fetchMonthAll(dateStr.slice(0, 7)).then(function(rows){
+      if (token !== ovToken) return;
+      el.ovLoading.style.display = "none";
+
+      // 只算：這個館、這一天、而且是上班班別（不是休假／請假）
+      var working = rows.filter(function(r){
+        return r.date === dateStr && r.location === loc && r.content && !isLeave(r.content);
+      });
+      working.sort(function(a, b){
+        var ma = findShiftMeta(a.content), mb = findShiftMeta(b.content);
+        var ta = ma ? ma.when : "9999", tb = mb ? mb.when : "9999";
+        return ta < tb ? -1 : ta > tb ? 1 : a.name.localeCompare(b.name);
+      });
+
+      var n = working.length;
+      el.ovCountNum.textContent = n + " / " + rooms;
+      if (n > rooms){
+        el.ovCount.className = "ov-count over";
+        el.ovAlert.style.display = "block";
+        el.ovAlert.textContent = "⚠️ 房間不夠：上班 " + n + " 人，只有 " + rooms + " 間房";
+      }
+
+      if (!n){
+        el.ovList.innerHTML = '<div class="empty-hint">這天這個館還沒有人排上班</div>';
         return;
       }
-      delete state.data[dateStr];
-      renderCalendar();
-      renderList();
-      closeSheet();
-      showToast("已刪除 " + dateStr.slice(5).replace("-", "/"));
+      working.forEach(function(r){
+        var row = document.createElement("div");
+        row.className = "ov-row";
+        var nm = document.createElement("span");
+        nm.className = "nm";
+        nm.textContent = r.name;
+        var sc = shiftColor(r.content);
+        var pill = document.createElement("span");
+        pill.className = "pill";
+        pill.style.background = sc.bg;
+        pill.style.color = sc.fg;
+        pill.textContent = r.content + (isNightShift(r.content) ? " 🌙" : "");
+        row.appendChild(nm);
+        row.appendChild(pill);
+        el.ovList.appendChild(row);
+      });
+    }).catch(function(err){
+      if (token !== ovToken) return;
+      console.error("[總覽] 載入失敗", err);
+      el.ovLoading.textContent = "⚠️ 載入全部排班失敗（" + err.message + "）";
     });
+  }
+
+  function setTab(tab){
+    state.tab = tab;
+    el.tabMineBtn.classList.toggle("active", tab === "mine");
+    el.tabOverviewBtn.classList.toggle("active", tab === "overview");
+    el.minePage.style.display = tab === "mine" ? "block" : "none";
+    el.overviewPage.style.display = tab === "overview" ? "block" : "none";
+    renderSaveBar();
+    if (tab === "overview") renderOverview();
   }
 
   // ============================================================
   // 事件
   // ============================================================
-  document.getElementById("prevMonthBtn").addEventListener("click", function(){
-    if (state.viewMonth === 0){ state.viewMonth = 11; state.viewYear--; }
-    else { state.viewMonth--; }
+  function changeMonth(delta){
+    if (state.saving){ showToast("儲存中，請稍等"); return; }
+    if (pendingCount() > 0){
+      showToast("這個月還有 " + pendingCount() + " 天沒儲存，請先按「儲存」或「放棄」", true);
+      return;
+    }
+    var m = state.viewMonth + delta, y = state.viewYear;
+    if (m < 0){ m = 11; y--; }
+    if (m > 11){ m = 0; y++; }
+    state.viewYear = y;
+    state.viewMonth = m;
     loadMonth();
+  }
+
+  $("prevMonthBtn").addEventListener("click", function(){ changeMonth(-1); });
+  $("nextMonthBtn").addEventListener("click", function(){ changeMonth(1); });
+  el.leaveEntryBtn.addEventListener("click", function(){ setBrush(LEAVE_BRUSH); });
+  el.saveAllBtn.addEventListener("click", saveAll);
+  el.discardBtn.addEventListener("click", discardAll);
+
+  el.leaveClearBtn.addEventListener("click", function(){
+    if (state.leaveDate) commitDay(state.leaveDate, null);
+    closeLeaveSheet();
   });
-  document.getElementById("nextMonthBtn").addEventListener("click", function(){
-    if (state.viewMonth === 11){ state.viewMonth = 0; state.viewYear++; }
-    else { state.viewMonth++; }
-    loadMonth();
+  $("leaveCloseBtn").addEventListener("click", closeLeaveSheet);
+  el.leaveOverlay.addEventListener("click", function(e){ if (e.target === el.leaveOverlay) closeLeaveSheet(); });
+
+  el.sendLeaveBtn.addEventListener("click", onSendLeaveClick);
+  el.pickNextBtn.addEventListener("click", function(){
+    var checked = Array.prototype.map.call(
+      el.pickList.querySelectorAll("input[type=checkbox]:checked"),
+      function(cb){ return cb.dataset.date; }
+    );
+    el.pickOverlay.classList.remove("active");
+    openReviewForDates(checked);
   });
-  el.segWorkBtn.addEventListener("click", function(){ state.sheetMode = "work"; applyMode(); });
-  el.segLeaveBtn.addEventListener("click", function(){ state.sheetMode = "leave"; applyMode(); });
-  el.saveBtn.addEventListener("click", saveDay);
-  el.delBtn.addEventListener("click", deleteDay);
-  document.getElementById("closeSheetBtn").addEventListener("click", closeSheet);
-  el.overlay.addEventListener("click", function(e){ if (e.target === el.overlay) closeSheet(); });
-  document.getElementById("retryBtn").addEventListener("click", loadRoster);
+  $("pickCloseBtn").addEventListener("click", function(){ el.pickOverlay.classList.remove("active"); });
+  el.pickOverlay.addEventListener("click", function(e){ if (e.target === el.pickOverlay) el.pickOverlay.classList.remove("active"); });
+  el.confirmSendBtn.addEventListener("click", function(){
+    if (el.confirmSendBtn.disabled) return;
+    el.reviewOverlay.classList.remove("active");
+    runSendFlow();
+  });
+  $("reviewCloseBtn").addEventListener("click", function(){ el.reviewOverlay.classList.remove("active"); });
+  el.reviewOverlay.addEventListener("click", function(e){ if (e.target === el.reviewOverlay) el.reviewOverlay.classList.remove("active"); });
+  el.resultDoneBtn.addEventListener("click", function(){ el.resultOverlay.classList.remove("active"); });
+
+  el.tabMineBtn.addEventListener("click", function(){ setTab("mine"); });
+  el.tabOverviewBtn.addEventListener("click", function(){ setTab("overview"); });
+  $("ovPrevBtn").addEventListener("click", function(){
+    state.ovDate = shiftDate(state.ovDate, -1);
+    el.ovDate.value = state.ovDate;
+    renderOverview();
+  });
+  $("ovNextBtn").addEventListener("click", function(){
+    state.ovDate = shiftDate(state.ovDate, 1);
+    el.ovDate.value = state.ovDate;
+    renderOverview();
+  });
+  el.ovDate.addEventListener("change", function(){
+    if (!el.ovDate.value) return;
+    state.ovDate = el.ovDate.value;
+    renderOverview();
+  });
+  $("retryBtn").addEventListener("click", loadRoster);
+
+  // 有沒儲存的變更就離開頁面 → 瀏覽器會問一下
+  window.addEventListener("beforeunload", function(e){
+    if (pendingCount() > 0){
+      e.preventDefault();
+      e.returnValue = "";
+    }
+  });
 
   // ============================================================
   // 啟動
