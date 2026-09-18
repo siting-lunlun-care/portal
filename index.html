@@ -441,7 +441,7 @@
       <span class="title">預休登記</span>
     </a>
 
-    <button type="button" class="card is-soon" data-fn="排班登記" hidden>
+    <a class="card" data-fn="排班登記" hidden>
       <span class="icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
              stroke-linecap="round" stroke-linejoin="round">
@@ -450,7 +450,7 @@
         </svg>
       </span>
       <span class="title">排班登記</span>
-    </button>
+    </a>
 
     <a class="card" data-fn="請假申請" hidden>
       <span class="icon" aria-hidden="true">
@@ -561,6 +561,7 @@
   // 這些卡片要帶 LIFF 身分（uid、dept）連到入口頁底下的子頁
   var PORTAL_LINKS = {
     "預休登記": "https://siting-lunlun-care.github.io/portal/preleave/",
+    "排班登記": "https://siting-lunlun-care.github.io/portal/schedule/",
     "請假申請": "https://siting-lunlun-care.github.io/portal/leave/"
   };
 
